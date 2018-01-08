@@ -1,4 +1,4 @@
-Flying Pigeon
+Black Swan
 =============
 
 .. image:: https://travis-ci.org/bird-house/flyingpigeon.svg?branch=master
