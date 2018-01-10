@@ -6,14 +6,14 @@ Black Swan
    :alt: Travis Build
 
 
-Flying Pigeon (the bird)
-  *The pigeon finds its way home over extremely long distances. [..].* (`Wikipedia <https://en.wikipedia.org/wiki/Pigeon_flying>`_).
+Black Swan (the waterbird)
 
-Flying Pigeon (the bike)
-  *Flying Pigeon is a Chinese bicycle company [..]. The Flying Pigeon is the most popular vehicle ever.* (`Wikipedia <https://en.wikipedia.org/wiki/Flying_Pigeon>`_)
+Black Swan is a Python package with a collection of algorithms focussing on extreme weather event assessments available as a Web Processing Service (WPS).
 
-Flyingpigeon is a Python package with a collection of algorithms for the climate community available as a Web Processing Service (WPS).
+Named for the reference to the black swan theory for unexpected extreme events
+
+  *The term is based on an ancient saying which presumed black swans did not exist, but the saying was rewritten after black swans were discovered in the wild. [..].* (`Wikipedia <https://en.wikipedia.org/wiki/Black_swan_theory>`_).
 
 For installation and configuration read the `documentation <http://flyingpigeon.readthedocs.io>`_.
 
-Flyingpigeon is part of the `Birdhouse <http://bird-house.github.io>`_ project.
+Blackswan is part of the `Birdhouse <http://bird-house.github.io>`_ project.
