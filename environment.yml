@@ -1,8 +1,9 @@
 name: blackswan
 channels:
 - birdhouse
-- conda-forge
 - defaults
+- conda-forge
+#- defaults
 # ocgis
 - nesii
 # the r hell ...
@@ -56,31 +57,34 @@ dependencies:
 - scikit-learn #=0.17.1
 ################
 # visualisation
-- matplotlib=2.0.2=py27_2 #2.0.0=np112py27_2
+# - matplotlib=2.0.2=py27_2 #2.0.0=np112py27_2
 - functools32=3.2.3.2=py27_0 # badly pinned matplotlib dependency
 - cartopy
 - iris
 - reportlab
 # visualisation EO-data
-- python-snappy   # =0.5.1=py27_2 # conda-forge
-- snappy        # conda-forge
+# - python-snappy   # =0.5.1=py27_2 # conda-forge
+# - snappy        # conda-forge
 ################
 ## cdo ocgis
-- cdo #=1.9.0=0
-#- hdf5=1.8.18=1
+- cdo=1.9.0=0
+- hdf5=1.8.18=2
 - libnetcdf=4.4.1.1
 - python-ecmwf_grib=1.23.1
-- python-cdo=1.3.3
+- python-cdo #=1.3.3
+- xarray
 # - ocgis=2.0.0
-- ocgis-next=2.1.0.dev1 # =1.4.0.dev1=py27_7  #  nesii/channel/ocgis-next
-- icclim
+- ocgis=2.0.0
+# - ocgis-next=2.1.0.dev1 # =1.4.0.dev1=py27_7  #  nesii/channel/ocgis-next
+# - icclim
 - proj4 #=4.9.3
-- geos #=3.5.1=1
+# - geos #=3.5.1=1
 - jpeg=9b
-- gdal=2.1.3
+#- gdal=2.1.3
+- gdal=2.2.2
 # ################
 # # analogue
-#- castf90=0.1.5
+- castf90=0.1.5
 # ################
 # # r
 - cairo # for X11 independend plot support
@@ -96,8 +100,8 @@ dependencies:
 # esgf
 - esgf-pyclient
 # satetlite
-- rasterio
-- retrying
+# - rasterio
+# - retrying
 - pip:
   - pygbif==0.2.0 #0.1.4
   - sphinx-autoapi==0.5.0
