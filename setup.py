@@ -2,7 +2,7 @@ import os
 
 from setuptools import setup, find_packages
 
-version = __import__('flyingpigeon').__version__
+version = __import__('blackswan').__version__
 here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, 'README.rst')).read()
 CHANGES = open(os.path.join(here, 'CHANGES.rst')).read()
@@ -19,23 +19,23 @@ classifiers = [
     'Topic :: Scientific/Engineering :: Atmospheric Science',
 ]
 
-setup(name='flyingpigeon',
+setup(name='blackswan',
       version=version,
-      description='Processes for climate data, indices and extreme events',
+      description='Processes for extreme events',
       long_description=README + '\n\n' + CHANGES,
       classifiers=classifiers,
       author='Nils Hempelmann',
-      author_email='nils.hempelmann@ipsl.jussieu.fr',
-      url='http://flyingpigeon.readthedocs.io/en/latest/',
+      author_email='nikolay.kadygrov@lsce.ipsl.fr',
+      url='http://blackswan.readthedocs.io/en/latest/',
       license="http://www.apache.org/licenses/LICENSE-2.0",
-      keywords='wps flyingpigeon pywps ipsl birdhouse conda climate indices species',
+      keywords='wps blackswan pywps ipsl birdhouse conda climate extreme events',
       packages=find_packages(),
       include_package_data=True,
       zip_safe=False,
-      test_suite='flyingpigeon',
+      test_suite='blackswan',
       install_requires=reqs,
       entry_points={
           'console_scripts': [
-             'flyingpigeon=flyingpigeon:main',
+             'blackswan=blackswan:main',
           ]},
       )

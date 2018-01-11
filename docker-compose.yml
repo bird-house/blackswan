@@ -1,5 +1,5 @@
-flyingpigeon:
-  image: birdhouse/flyingpigeon
+blackswan:
+  image: birdhouse/blackswan
   environment:
     HOSTNAME: $HOSTNAME
     HTTP_PORT: $HTTP_PORT
