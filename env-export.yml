@@ -1,4 +1,4 @@
-name: flyingpigeon
+name: blackswan
 channels:
 - bioconda
 - nesii
@@ -273,4 +273,4 @@ dependencies:
   - sphinxcontrib-golangdomain==0.1.3.dev0
   - tqdm==4.19.5
   - unidecode==0.4.21
-prefix: /opt/anaconda/envs/flyingpigeon
+prefix: /opt/anaconda/envs/blackswan
