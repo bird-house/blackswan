@@ -590,6 +590,17 @@ class AnalogsmodelProcess(Process):
             LOGGER.debug(msg)
         #-----------------------
 
+        # ##### TEMPORAL WORKAROUND! With instaled hdf5-1.8.18 in anaconda ###############
+        # ##### MUST be removed after castf90 recompiled with the latest hdf version
+        # ##### NOT safe
+        os.environ['HDF5_DISABLE_VERSION_CHECK'] = '1'
+        #hdflib = os.path.expanduser("~") + '/anaconda/lib'
+        #hdflib = os.getenv("HOME") + '/anaconda/lib'
+        import pwd
+        hdflib = pwd.getpwuid(os.getuid()).pw_dir + '/anaconda/lib'
+        os.environ['LD_LIBRARY_PATH'] = hdflib
+        # ################################################################################
+
         try:
             # response.update_status('execution of CASTf90', 50)
             cmd = 'analogue.out %s' % path.relpath(config_file)
