@@ -16,7 +16,7 @@ def set_basic_md(resource):
 
     md_basic = {
      'activity': 'birdhouse project',
-     'software': 'flyingpigeon v 0.1',
+     'software': 'blackswan v 0.1',
      'software_project': 'birdhouse',
      'software_reference': 'https://github.com/bird-house/',
      'software_platform': 'PYTHON %s' % py_version,

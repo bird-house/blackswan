@@ -79,7 +79,7 @@ class AnalogsmodelProcess(Process):
             LiteralInput('dateSt', 'Start date of analysis period',
                          data_type='date',
                          abstract='First day of the period to be analysed',
-                         default='2013-07-15',
+                         default='2000-07-15',
                          min_occurs=1,
                          max_occurs=1,
                          ),
@@ -87,7 +87,7 @@ class AnalogsmodelProcess(Process):
             LiteralInput('dateEn', 'End date of analysis period',
                          data_type='date',
                          abstract='Last day of the period to be analysed',
-                         default='2013-12-31',
+                         default='2000-07-18',
                          min_occurs=1,
                          max_occurs=1,
                          ),
@@ -95,7 +95,7 @@ class AnalogsmodelProcess(Process):
             LiteralInput('refSt', 'Start date of reference period',
                          data_type='date',
                          abstract='First day of the period where analogues being picked',
-                         default='2013-01-01',
+                         default='1950-01-01',
                          min_occurs=1,
                          max_occurs=1,
                          ),
@@ -103,7 +103,7 @@ class AnalogsmodelProcess(Process):
             LiteralInput('refEn', 'End date of reference period',
                          data_type='date',
                          abstract='Last day of the period where analogues being picked',
-                         default='2014-12-31',
+                         default='1999-12-31',
                          min_occurs=1,
                          max_occurs=1,
                          ),
@@ -473,6 +473,7 @@ class AnalogsmodelProcess(Process):
                 tmp_f = 'dom_' + path.basename(res_fn)
                 comcdo = '%s,%s,%s,%s' % (bbox[0],bbox[2],bbox[1],bbox[3])
                 cdo.sellonlatbox(comcdo, input=res_fn, output=tmp_f)
+                # tmp_f = call(resource=res_fn, geom=bbox, spatial_wrapping='wrap', prefix=tmp_f)
                 regr_res.append(tmp_f)
 
             # ============================  
