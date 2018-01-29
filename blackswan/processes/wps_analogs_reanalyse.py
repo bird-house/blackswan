@@ -339,6 +339,7 @@ class AnalogsreanalyseProcess(Process):
                     conform_units_to = None
                 else:
                     level = None
+                    if var == 'precip': var = 'pr_wtr'
                     conform_units_to = 'hPa'
             elif '20CRV2' in model:
                 getlevel = False

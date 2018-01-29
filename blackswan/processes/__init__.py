@@ -18,7 +18,7 @@ from .wps_weatherregimes_model import WeatherregimesmodelProcess
 from .wps_analogs_reanalyse import AnalogsreanalyseProcess
 from .wps_analogs_model import AnalogsmodelProcess
 #from .wps_analogs_compare import AnalogscompareProcess
-#from .wps_analogs_viewer import AnalogsviewerProcess
+from .wps_analogs_viewer import AnalogsviewerProcess
 # from .wps_robustness import RobustnessProcess
 #from .wps_plot_timeseries import PlottimeseriesProcess
 #from .wps_segetalflora import SegetalfloraProcess
@@ -52,7 +52,7 @@ processes = [
     AnalogsreanalyseProcess(),
     AnalogsmodelProcess(),
 #    AnalogscompareProcess(),
-#    AnalogsviewerProcess(),
+    AnalogsviewerProcess(),
     # RobustnessProcess(),
     # PlottimeseriesProcess(),
     # SegetalfloraProcess(),
