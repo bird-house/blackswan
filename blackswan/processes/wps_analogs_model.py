@@ -10,22 +10,22 @@ import time  # performance test
 #later goes to utils
 from netCDF4 import Dataset
 
-from flyingpigeon.datafetch import _PRESSUREDATA_
-from flyingpigeon import analogs
-from flyingpigeon.ocgis_module import call
-from flyingpigeon.datafetch import get_level
-from flyingpigeon.utils import get_variable
-from flyingpigeon.utils import rename_complexinputs
-from flyingpigeon.utils import archive, archiveextract
-from flyingpigeon.utils import get_timerange, get_calendar
-from flyingpigeon.calculation import remove_mean_trend
+from blackswan.datafetch import _PRESSUREDATA_
+from blackswan import analogs
+from blackswan.ocgis_module import call
+from blackswan.datafetch import get_level
+from blackswan.utils import get_variable
+from blackswan.utils import rename_complexinputs
+from blackswan.utils import archive, archiveextract
+from blackswan.utils import get_timerange, get_calendar
+from blackswan.calculation import remove_mean_trend
 
 from pywps import Process
 from pywps import LiteralInput, LiteralOutput
 from pywps import ComplexInput, ComplexOutput
 from pywps import Format, FORMATS
 from pywps.app.Common import Metadata
-from flyingpigeon.log import init_process_logger
+from blackswan.log import init_process_logger
 
 import logging
 LOGGER = logging.getLogger("PYWPS")
