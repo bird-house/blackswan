@@ -2,7 +2,7 @@
 FROM birdhouse/bird-base:latest
 MAINTAINER https://github.com/bird-house
 
-LABEL Description="flyingpigeon application" Vendor="Birdhouse" Version="1.1_dev"
+LABEL Description="blackswan application" Vendor="Birdhouse" Version="1.1_dev"
 
 # Configure hostname and ports for services
 ENV HTTP_PORT 8080
@@ -14,10 +14,10 @@ ENV HOSTNAME localhost
 ENV HOME /root
 
 # Copy application sources
-COPY . /opt/birdhouse/src/flyingpigeon
+COPY . /opt/birdhouse/src/blackswan
 
 # cd into application
-WORKDIR /opt/birdhouse/src/flyingpigeon
+WORKDIR /opt/birdhouse/src/blackswan
 
 # Provide custom.cfg with settings for docker image
 RUN printf "[buildout]\nextends=profiles/docker.cfg" > custom.cfg
