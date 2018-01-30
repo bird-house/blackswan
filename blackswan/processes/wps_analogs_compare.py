@@ -2,7 +2,7 @@ from datetime import date
 from datetime import datetime as dt
 from datetime import time as dt_time
 import time  # performance test
-from os import path, system, environ, getuid
+from os import path, system, environ, getuid, utime
 from tempfile import mkstemp
 
 import uuid
@@ -166,6 +166,15 @@ class AnalogscompareProcess(Process):
                          allowed_values=['reanalyses']
                          #allowed_values=['reanalyses', 'model']
                          ),
+
+            LiteralInput("plot", "Plot",
+                         abstract="Plot simulations and Mean/Best/Last analogs?",
+                         default='Yes',
+                         data_type='string',
+                         min_occurs=1,
+                         max_occurs=1,
+                         allowed_values=['Yes', 'No']
+                         ),
         ]
         outputs = [
             ComplexOutput("analog_pdf", "Maps with mean analogs and simulation",
@@ -271,6 +280,7 @@ class AnalogscompareProcess(Process):
 
         direction = request.inputs['direction'][0].data
         normalize = request.inputs['normalize'][0].data
+        plot = request.inputs['plot'][0].data
         distance = request.inputs['dist'][0].data
         outformat = request.inputs['outformat'][0].data
         timewin = request.inputs['timewin'][0].data
@@ -726,13 +736,19 @@ class AnalogscompareProcess(Process):
 
         LOGGER.debug("castf90 took %s seconds.", time.time() - start_time)
 
+        # TODO: Add try - except for pdfs
+        if plot == 'Yes':
+            analogs_pdf = analogs.plot_analogs(configfile=config_file)   
+        else:
+            analogs_pdf = 'dummy_plot.pdf'
+            with open(analogs_pdf, 'a'): utime(analogs_pdf, None)
+
         response.update_status('preparting output', 91)
-        analogs_pdf = analogs.plot_analogs(configfile=config_file)
 
         # Stopper to keep twitcher results, for debug
         # dummy=dummy
         response.outputs['analog_pdf'].file = analogs_pdf
-        response.outputs['config'].file = config_file #config_output_url  # config_file )
+        response.outputs['config'].file = config_file 
         response.outputs['analogs'].file = output_file
         response.outputs['output_netcdf'].file = simulation
         response.outputs['target_netcdf'].file = archive
