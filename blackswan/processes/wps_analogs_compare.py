@@ -2,22 +2,22 @@ from datetime import date
 from datetime import datetime as dt
 from datetime import time as dt_time
 import time  # performance test
-from os import path, system
+from os import path, system, environ, getuid
 from tempfile import mkstemp
 
 import uuid
 from netCDF4 import Dataset
 from numpy import squeeze
 
-from flyingpigeon import analogs
-from flyingpigeon.ocgis_module import call
-from flyingpigeon.datafetch import reanalyses
-from flyingpigeon.utils import get_variable, rename_variable
-from flyingpigeon.utils import rename_complexinputs
-from flyingpigeon.utils import archive, archiveextract
-from flyingpigeon.utils import get_timerange
-from flyingpigeon.log import init_process_logger
-from flyingpigeon.datafetch import _PRESSUREDATA_
+from blackswan import analogs
+from blackswan.ocgis_module import call
+from blackswan.datafetch import reanalyses
+from blackswan.utils import get_variable, rename_variable
+from blackswan.utils import rename_complexinputs
+from blackswan.utils import archive, archiveextract
+from blackswan.utils import get_timerange
+from blackswan.log import init_process_logger
+from blackswan.datafetch import _PRESSUREDATA_
 
 from pywps import Process
 from pywps import LiteralInput, LiteralOutput
@@ -647,7 +647,8 @@ class AnalogscompareProcess(Process):
                 base_id=base_id,
                 sim_id=sim_id,
                 timewin=timewin,
-                varname=var,
+#                varname=var,
+                varname=out_var,
                 seacyc=seacyc,
                 cycsmooth=91,
                 nanalog=nanalog,
@@ -675,6 +676,36 @@ class AnalogscompareProcess(Process):
         start_time = time.time()  # measure call castf90
 
         response.update_status('Start CASTf90 call', 20)
+
+        #-----------------------
+        try:
+            import ctypes
+            # TODO: This lib is for linux
+            mkl_rt = ctypes.CDLL('libmkl_rt.so')
+            nth=mkl_rt.mkl_get_max_threads()
+            LOGGER.debug('Current number of threads: %s' % (nth))
+            mkl_rt.mkl_set_num_threads(ctypes.byref(ctypes.c_int(64)))
+            nth=mkl_rt.mkl_get_max_threads()
+            LOGGER.debug('NEW number of threads: %s' % (nth))
+            # TODO: Does it \/\/\/ work with default shell=False in subprocess... (?)
+            environ['MKL_NUM_THREADS']=str(nth)
+            environ['OMP_NUM_THREADS']=str(nth)
+        except Exception as e:
+            msg = 'Failed to set THREADS %s ' % e
+            LOGGER.debug(msg)
+        #-----------------------
+
+        # ##### TEMPORAL WORKAROUND! With instaled hdf5-1.8.18 in anaconda ###############
+        # ##### MUST be removed after castf90 recompiled with the latest hdf version
+        # ##### NOT safe
+        environ['HDF5_DISABLE_VERSION_CHECK'] = '1'
+        #hdflib = os.path.expanduser("~") + '/anaconda/lib'
+        #hdflib = os.getenv("HOME") + '/anaconda/lib'
+        import pwd
+        hdflib = pwd.getpwuid(getuid()).pw_dir + '/anaconda/lib'
+        environ['LD_LIBRARY_PATH'] = hdflib
+        # ################################################################################
+
         try:
             # response.update_status('execution of CASTf90', 50)
             cmd = 'analogue.out %s' % path.relpath(config_file)

@@ -17,14 +17,14 @@ from pywps import Format, FORMATS
 from pywps.app.Common import Metadata
 from pywps.inout.storage import FileStorage
 
-from flyingpigeon.datafetch import _PRESSUREDATA_
-from flyingpigeon.datafetch import reanalyses as rl
-from flyingpigeon.ocgis_module import call
-from flyingpigeon import analogs
-from flyingpigeon.utils import rename_complexinputs
-from flyingpigeon.utils import get_variable
-from flyingpigeon.calculation import remove_mean_trend
-from flyingpigeon.log import init_process_logger
+from blackswan.datafetch import _PRESSUREDATA_
+from blackswan.datafetch import reanalyses as rl
+from blackswan.ocgis_module import call
+from blackswan import analogs
+from blackswan.utils import rename_complexinputs
+from blackswan.utils import get_variable
+from blackswan.calculation import remove_mean_trend
+from blackswan.log import init_process_logger
 
 import logging
 LOGGER = logging.getLogger("PYWPS")

@@ -1,6 +1,6 @@
 from os.path import join, abspath, dirname, getsize, curdir, isfile
 from netCDF4 import Dataset
-from flyingpigeon import config
+from blackswan import config
 import logging
 LOGGER = logging.getLogger("PYWPS")
 
@@ -302,7 +302,7 @@ def eval_timerange(resource, time_range):
 
     :returns [datetime,datetime]: time_range
     """
-    from flyingpigeon.utils import get_time
+    from blackswan.utils import get_time
 
     LOGGER.info('time_range: %s' % time_range)
 

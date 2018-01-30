@@ -1,8 +1,8 @@
 import statsmodels.api as sm
 from numpy import tile, empty, linspace
 
-from flyingpigeon.utils import get_variable
-from flyingpigeon.ocgis_module import call
+from blackswan.utils import get_variable
+from blackswan.ocgis_module import call
 from tempfile import mkstemp
 
 import logging

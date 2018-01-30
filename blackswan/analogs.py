@@ -9,12 +9,12 @@ import cartopy.crs as ccrs
 
 import numpy as np
 
-from flyingpigeon.utils import get_variable, get_time
-from flyingpigeon.utils import archive, archiveextract
+from blackswan.utils import get_variable, get_time
+from blackswan.utils import archive, archiveextract
 
-from flyingpigeon import config
-from flyingpigeon import templating
-from flyingpigeon.utils import prepare_static_folder
+from blackswan import config
+from blackswan import templating
+from blackswan.utils import prepare_static_folder
 
 import logging
 LOGGER = logging.getLogger("PYWPS")
@@ -136,7 +136,7 @@ def get_configfile(files,
     config = open(config_file, "w")
 
     config.write(
-        '!Configuration file for CASTf90 analogs processes deployed in flyingpigeon\n')
+        '!Configuration file for CASTf90 analogs processes deployed in blackswan\n')
     config.write('!Created : %s \n' % (date_stamp))
     config.write('!Version : 0.1.5 \n')
     config.write('&FILES \n')
@@ -227,8 +227,8 @@ def seacyc(archive, simulation, method='base'):
         LOGGER.debug('seacyc started with method: %s' % method)
 
         from shutil import copy
-        from flyingpigeon.ocgis_module import call
-        from flyingpigeon.utils import get_variable
+        from blackswan.ocgis_module import call
+        from blackswan.utils import get_variable
         from cdo import Cdo
         cdo = Cdo()
 
@@ -407,7 +407,7 @@ def plot_analogs(configfile='config.txt', simday='all', **kwargs):
 
     import uuid
 
-    from flyingpigeon.visualisation import pdfmerge
+    from blackswan.visualisation import pdfmerge
 
     simoutpdf='Analogs.pdf'
 

@@ -1,4 +1,4 @@
-from flyingpigeon import utils
+from blackswan.utils import download
 from datetime import datetime as dt
 from datetime import timedelta
 
@@ -77,7 +77,7 @@ def reanalyses(start=1948, end=None, variable='slp', dataset='NCEP', timres='day
     # used for NETCDF convertion
     from netCDF4 import Dataset
     from os import path, system
-    from flyingpigeon.ocgis_module import call
+    from blackswan.ocgis_module import call
     from shutil import move
     # used for NETCDF convertion
 
@@ -146,7 +146,7 @@ def reanalyses(start=1948, end=None, variable='slp', dataset='NCEP', timres='day
                 msg = "could not set url"
                 LOGGER.exception(msg)
             try:
-                df = utils.download(url, cache=True)
+                df = download(url, cache=True)
                 LOGGER.debug('single file fetched %s ' % year)
                 # convert to NETCDF4_CLASSIC
                 try:
@@ -191,9 +191,9 @@ def reanalyses(start=1948, end=None, variable='slp', dataset='NCEP', timres='day
 
 
 def get_level(resource, level):
-    from flyingpigeon.ocgis_module import call
+    from blackswan.ocgis_module import call
     from netCDF4 import Dataset
-    from flyingpigeon.utils import get_variable
+    from blackswan.utils import get_variable
     from numpy import squeeze
     from os import path
 
@@ -287,7 +287,7 @@ def fetch_eodata(item_type, asset, token, bbox, period=[dt.today()-timedelta(day
     import time
     from os.path import join
     from os import path, makedirs
-    from flyingpigeon.config import cache_path
+    from blackswan.config import cache_path
     #  Enter a bbox: min_lon, max_lon, min_lat, max_lat.
     #                xmin ymin xmax ymax
     geojson_geometry = {"type": "Polygon",
