@@ -3,16 +3,16 @@ Processes for Weather Classification
 Author: Nils Hempelmann (nils.hempelmann@lsce.ipsl.fr)
 """
 
-from flyingpigeon.datafetch import _PRESSUREDATA_
-from flyingpigeon.weatherregimes import _TIMEREGIONS_
+from blackswan.datafetch import _PRESSUREDATA_
+from blackswan.weatherregimes import _TIMEREGIONS_
 from pywps import Process
 from pywps import LiteralInput
 from pywps import ComplexInput, ComplexOutput
 from pywps import Format, FORMATS
 from pywps.app.Common import Metadata
-from flyingpigeon.log import init_process_logger
+from blackswan.log import init_process_logger
 
-from flyingpigeon.ocgis_module import call
+from blackswan.ocgis_module import call
 from os.path import basename, splitext
 
 import logging
@@ -187,7 +187,7 @@ class WeatherregimesreanalyseProcess(Process):
 
         LOGGER.info('Start process')
         from datetime import datetime as dt
-        from flyingpigeon import weatherregimes as wr
+        from blackswan import weatherregimes as wr
         from tempfile import mkstemp
 
         response.update_status('execution started at : {}'.format(dt.now()), 5)
@@ -266,8 +266,8 @@ class WeatherregimesreanalyseProcess(Process):
         # fetch Data from original data archive
         ##########################################
 
-        from flyingpigeon.datafetch import reanalyses as rl
-        from flyingpigeon.utils import get_variable
+        from blackswan.datafetch import reanalyses as rl
+        from blackswan.utils import get_variable
         # from os.path import basename, splitext
         from os import system
         from netCDF4 import Dataset
@@ -399,7 +399,7 @@ class WeatherregimesreanalyseProcess(Process):
         response.update_status('Start weather regime clustering ', 25)
         import shlex
         import subprocess
-        from flyingpigeon import config
+        from blackswan import config
         from os.path import curdir, exists, join
 
         try:

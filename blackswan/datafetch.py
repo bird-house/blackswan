@@ -1,4 +1,4 @@
-from flyingpigeon import utils
+from blackswan.utils import download
 from datetime import datetime as dt
 from datetime import timedelta
 
@@ -9,7 +9,7 @@ import logging
 LOGGER = logging.getLogger("PYWPS")
 
 _PRESSUREDATA_ = [
-    'NCEP_slp', 'NCEP_z1000', 'NCEP_z925', 'NCEP_z850', 'NCEP_z700', 'NCEP_z600', 'NCEP_z500', 'NCEP_z400', 'NCEP_z300',
+    'NCEP_slp', 'NCEP_precip', 'NCEP_z1000', 'NCEP_z925', 'NCEP_z850', 'NCEP_z700', 'NCEP_z600', 'NCEP_z500', 'NCEP_z400', 'NCEP_z300',
     'NCEP_z250', 'NCEP_z200', 'NCEP_z150', 'NCEP_z100', 'NCEP_z70', 'NCEP_z50', 'NCEP_z30', 'NCEP_z20', 'NCEP_z10',
     '20CRV2_prmsl',
     '20CRV2_z1000', '20CRV2_z950', '20CRV2_z900', '20CRV2_z850', '20CRV2_z800', '20CRV2_z750', '20CRV2_z700',
@@ -77,7 +77,7 @@ def reanalyses(start=1948, end=None, variable='slp', dataset='NCEP', timres='day
     # used for NETCDF convertion
     from netCDF4 import Dataset
     from os import path, system
-    from flyingpigeon.ocgis_module import call
+    from blackswan.ocgis_module import call
     from shutil import move
     # used for NETCDF convertion
 
@@ -113,6 +113,8 @@ def reanalyses(start=1948, end=None, variable='slp', dataset='NCEP', timres='day
                 if dataset == 'NCEP':
                     if variable == 'slp':
                         url = 'https://www.esrl.noaa.gov/psd/thredds/fileServer/Datasets/ncep.reanalysis.dailyavgs/surface/%s.%s.nc' % (variable, year)  # noqa
+                    if variable == 'pr_wtr':
+                        url = 'https://www.esrl.noaa.gov/psd/thredds/fileServer/Datasets/ncep.reanalysis.dailyavgs/surface/pr_wtr.eatm.%s.nc' % (year)  # noqa
                     if 'z' in variable:
                         url = 'https://www.esrl.noaa.gov/psd/thredds/fileServer/Datasets/ncep.reanalysis.dailyavgs/pressure/hgt.%s.nc' % (year)  # noqa
                 elif dataset == '20CRV2':
@@ -144,7 +146,7 @@ def reanalyses(start=1948, end=None, variable='slp', dataset='NCEP', timres='day
                 msg = "could not set url"
                 LOGGER.exception(msg)
             try:
-                df = utils.download(url, cache=True)
+                df = download(url, cache=True)
                 LOGGER.debug('single file fetched %s ' % year)
                 # convert to NETCDF4_CLASSIC
                 try:
@@ -189,9 +191,9 @@ def reanalyses(start=1948, end=None, variable='slp', dataset='NCEP', timres='day
 
 
 def get_level(resource, level):
-    from flyingpigeon.ocgis_module import call
+    from blackswan.ocgis_module import call
     from netCDF4 import Dataset
-    from flyingpigeon.utils import get_variable
+    from blackswan.utils import get_variable
     from numpy import squeeze
     from os import path
 
@@ -285,7 +287,7 @@ def fetch_eodata(item_type, asset, token, bbox, period=[dt.today()-timedelta(day
     import time
     from os.path import join
     from os import path, makedirs
-    from flyingpigeon.config import cache_path
+    from blackswan.config import cache_path
     #  Enter a bbox: min_lon, max_lon, min_lat, max_lat.
     #                xmin ymin xmax ymax
     geojson_geometry = {"type": "Polygon",

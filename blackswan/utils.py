@@ -12,7 +12,7 @@ from netCDF4 import MFDataset  # does not support NETCDF4
 from pyesgf.search.connection import SearchConnection
 from pyesgf.search import TYPE_FILE
 
-from flyingpigeon import config
+from blackswan import config
 
 import logging
 LOGGER = logging.getLogger("PYWPS")

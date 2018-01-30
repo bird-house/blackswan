@@ -1,8 +1,8 @@
 import statsmodels.api as sm
 from numpy import tile, empty, linspace
 
-from flyingpigeon import utils
-from flyingpigeon.ocgis_module import call
+from blackswan.utils import get_variable
+from blackswan.ocgis_module import call
 from tempfile import mkstemp
 
 import logging
@@ -46,7 +46,7 @@ def get_anomalies(nc_file, frac=0.2, reference=None, method='ocgis', sseas='seri
     from netCDF4 import Dataset
 
     if variable is None:
-        variable = utils.get_variable(nc_file)
+        variable = get_variable(nc_file)
         # if more when 2 variables:
         if (variable.count(variable)==0):
             _ds=Dataset(nc_file)

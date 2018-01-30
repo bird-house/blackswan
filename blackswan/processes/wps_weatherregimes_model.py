@@ -2,20 +2,20 @@
 Processes for Weather Classification
 Author: Nils Hempelmann (nils.hempelmann@lsce.ipsl.fr)
 """
-from flyingpigeon.datafetch import _PRESSUREDATA_
-from flyingpigeon.weatherregimes import _TIMEREGIONS_
+from blackswan.datafetch import _PRESSUREDATA_
+from blackswan.weatherregimes import _TIMEREGIONS_
 from pywps import Process
 from pywps import LiteralInput
 from pywps import ComplexInput, ComplexOutput
 from pywps import BoundingBoxInput
 from pywps import Format, FORMATS
 from pywps.app.Common import Metadata
-from flyingpigeon.log import init_process_logger
+from blackswan.log import init_process_logger
 
 from datetime import datetime as dt
 from datetime import time as dt_time
-from flyingpigeon import weatherregimes as wr
-from flyingpigeon.utils import archive, archiveextract, get_calendar
+from blackswan import weatherregimes as wr
+from blackswan.utils import archive, archiveextract, get_calendar
 from tempfile import mkstemp
 from os import path
 
@@ -267,8 +267,8 @@ class WeatherregimesmodelProcess(Process):
         response.update_status('start subsetting', 17)
         # from flyingpigeon.weatherregimes import get_level
 
-        from flyingpigeon.ocgis_module import call
-        from flyingpigeon.utils import get_variable, get_timerange
+        from blackswan.ocgis_module import call
+        from blackswan.utils import get_variable, get_timerange
         time_range = [start, end]
 
         tmp_resource = []
@@ -313,7 +313,7 @@ class WeatherregimesmodelProcess(Process):
         response.update_status('Start weather regime clustering ', 50)
         import shlex
         import subprocess
-        from flyingpigeon import config
+        from blackswan import config
         from os.path import curdir, exists, join
 
         try:

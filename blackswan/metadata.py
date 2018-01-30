@@ -16,7 +16,7 @@ def set_basic_md(resource):
 
     md_basic = {
      'activity': 'birdhouse project',
-     'software': 'flyingpigeon v 0.1',
+     'software': 'blackswan v 0.1',
      'software_project': 'birdhouse',
      'software_reference': 'https://github.com/bird-house/',
      'software_platform': 'PYTHON %s' % py_version,
@@ -37,7 +37,7 @@ def set_dynamic_md(resource):
   Dynamic meta data like time frequency, spatial extent, start/end time, etc.
   :param resource: netCDF file where basic meta data should be set
   """
-  from flyingpigeon.utils import get_timerange, get_time
+  from blackswan.utils import get_timerange, get_time
   frequency = get_frequency(resource)
 
   time_coverage_start, time_coverage_end = get_timerange(resource)
@@ -276,7 +276,7 @@ def get_extent(resource):
     ds.close()
   else:
     ds.close()
-    from flyingpigeon import utils
+    from blackswan import utils
     lats, lons = utils.unrotate_pole(resource)
 
   min_lat = lats[:].min()
@@ -346,7 +346,7 @@ def set_metadata_segetalflora(resource):
   except Exception as e:
     LOGGER.error(e)
     # set the variable attributes:
-  from flyingpigeon.utils import get_variable
+  from blackswan.utils import get_variable
 
   try:
     ds = Dataset(resource, mode='a')

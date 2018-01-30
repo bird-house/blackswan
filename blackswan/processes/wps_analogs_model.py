@@ -10,22 +10,22 @@ import time  # performance test
 #later goes to utils
 from netCDF4 import Dataset
 
-from flyingpigeon.datafetch import _PRESSUREDATA_
-from flyingpigeon import analogs
-from flyingpigeon.ocgis_module import call
-from flyingpigeon.datafetch import get_level
-from flyingpigeon.utils import get_variable
-from flyingpigeon.utils import rename_complexinputs
-from flyingpigeon.utils import archive, archiveextract
-from flyingpigeon.utils import get_timerange, get_calendar
-from flyingpigeon.calculation import remove_mean_trend
+from blackswan.datafetch import _PRESSUREDATA_
+from blackswan import analogs
+from blackswan.ocgis_module import call
+from blackswan.datafetch import get_level
+from blackswan.utils import get_variable
+from blackswan.utils import rename_complexinputs
+from blackswan.utils import archive, archiveextract
+from blackswan.utils import get_timerange, get_calendar
+from blackswan.calculation import remove_mean_trend
 
 from pywps import Process
 from pywps import LiteralInput, LiteralOutput
 from pywps import ComplexInput, ComplexOutput
 from pywps import Format, FORMATS
 from pywps.app.Common import Metadata
-from flyingpigeon.log import init_process_logger
+from blackswan.log import init_process_logger
 
 import logging
 LOGGER = logging.getLogger("PYWPS")
@@ -79,7 +79,7 @@ class AnalogsmodelProcess(Process):
             LiteralInput('dateSt', 'Start date of analysis period',
                          data_type='date',
                          abstract='First day of the period to be analysed',
-                         default='2013-07-15',
+                         default='2000-07-15',
                          min_occurs=1,
                          max_occurs=1,
                          ),
@@ -87,7 +87,7 @@ class AnalogsmodelProcess(Process):
             LiteralInput('dateEn', 'End date of analysis period',
                          data_type='date',
                          abstract='Last day of the period to be analysed',
-                         default='2013-12-31',
+                         default='2000-07-18',
                          min_occurs=1,
                          max_occurs=1,
                          ),
@@ -95,7 +95,7 @@ class AnalogsmodelProcess(Process):
             LiteralInput('refSt', 'Start date of reference period',
                          data_type='date',
                          abstract='First day of the period where analogues being picked',
-                         default='2013-01-01',
+                         default='1950-01-01',
                          min_occurs=1,
                          max_occurs=1,
                          ),
@@ -103,7 +103,7 @@ class AnalogsmodelProcess(Process):
             LiteralInput('refEn', 'End date of reference period',
                          data_type='date',
                          abstract='Last day of the period where analogues being picked',
-                         default='2014-12-31',
+                         default='1999-12-31',
                          min_occurs=1,
                          max_occurs=1,
                          ),
@@ -473,6 +473,7 @@ class AnalogsmodelProcess(Process):
                 tmp_f = 'dom_' + path.basename(res_fn)
                 comcdo = '%s,%s,%s,%s' % (bbox[0],bbox[2],bbox[1],bbox[3])
                 cdo.sellonlatbox(comcdo, input=res_fn, output=tmp_f)
+                # tmp_f = call(resource=res_fn, geom=bbox, spatial_wrapping='wrap', prefix=tmp_f)
                 regr_res.append(tmp_f)
 
             # ============================  

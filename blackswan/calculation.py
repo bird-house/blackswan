@@ -1,7 +1,7 @@
 import logging
 LOGGER = logging.getLogger("PYWPS")
 
-from flyingpigeon.config import testdata_path
+from blackswan.config import testdata_path
 
 from os import path
 from os import listdir
@@ -16,7 +16,7 @@ def fieldmean(resource):
 
     :return list: timeseries of the averaged values per timepstep
     """
-    from flyingpigeon.utils import get_values, get_coordinates, get_index_lat
+    from blackswan.utils import get_values, get_coordinates, get_index_lat
     from numpy import radians, average, cos, sqrt, array
 
     data = get_values(resource)  # np.squeeze(ds.variables[variable][:])
