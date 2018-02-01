@@ -1,16 +1,16 @@
 import os
 
-from flyingpigeon import analogs as anlg
-from flyingpigeon import config
+from blackswan import analogs as anlg
+from blackswan import config
 from os.path import basename
-from flyingpigeon.utils import rename_complexinputs
+from blackswan.utils import rename_complexinputs
 
 from pywps import Process
 from pywps import LiteralInput, LiteralOutput
 from pywps import ComplexInput, ComplexOutput
 from pywps import Format, FORMATS
 from pywps.app.Common import Metadata
-from flyingpigeon.log import init_process_logger
+from blackswan.log import init_process_logger
 
 import logging
 LOGGER = logging.getLogger("PYWPS")
