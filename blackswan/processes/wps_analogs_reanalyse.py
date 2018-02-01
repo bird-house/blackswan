@@ -156,6 +156,15 @@ class AnalogsreanalyseProcess(Process):
                          min_occurs=0,
                          max_occurs=1,
                          ),
+
+            LiteralInput("plot", "Plot",
+                         abstract="Plot simulations and Mean/Best/Last analogs?",
+                         default='Yes',
+                         data_type='string',
+                         min_occurs=1,
+                         max_occurs=1,
+                         allowed_values=['Yes', 'No']
+                         ),
         ]
 
         outputs = [
@@ -275,6 +284,7 @@ class AnalogsreanalyseProcess(Process):
 
             normalize = request.inputs['normalize'][0].data
             detrend = request.inputs['detrend'][0].data
+            plot = request.inputs['plot'][0].data
             distance = request.inputs['dist'][0].data
             outformat = request.inputs['outformat'][0].data
             timewin = request.inputs['timewin'][0].data
@@ -634,9 +644,14 @@ class AnalogsreanalyseProcess(Process):
         LOGGER.debug("castf90 took %s seconds.", time.time() - start_time)
 
         # TODO: Add try - except for pdfs
-        analogs_pdf = analogs.plot_analogs(configfile=config_file)   
+        if plot == 'Yes':
+            analogs_pdf = analogs.plot_analogs(configfile=config_file)   
+        else:
+            analogs_pdf = 'dummy_plot.pdf'
+            with open(analogs_pdf, 'a'): os.utime(analogs_pdf, None)
+
         response.update_status('preparing output', 75)
-        # response.outputs['config'].storage = FileStorage()
+
         response.outputs['analog_pdf'].file = analogs_pdf 
         response.outputs['config'].file = config_file
         response.outputs['analogs'].file = output_file

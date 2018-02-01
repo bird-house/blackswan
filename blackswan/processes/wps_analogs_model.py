@@ -167,6 +167,15 @@ class AnalogsmodelProcess(Process):
                          min_occurs=0,
                          max_occurs=1,
                          ),
+
+            LiteralInput("plot", "Plot",
+                         abstract="Plot simulations and Mean/Best/Last analogs?",
+                         default='Yes',
+                         data_type='string',
+                         min_occurs=1,
+                         max_occurs=1,
+                         allowed_values=['Yes', 'No']
+                         ),
         ]
 
         outputs = [
@@ -302,6 +311,7 @@ class AnalogsmodelProcess(Process):
             LOGGER.debug('BBOX original: %s ' % (bboxStr))
 
             normalize = request.inputs['normalize'][0].data
+            plot = request.inputs['plot'][0].data
             distance = request.inputs['dist'][0].data
             outformat = request.inputs['outformat'][0].data
             timewin = request.inputs['timewin'][0].data
@@ -617,8 +627,15 @@ class AnalogsmodelProcess(Process):
             raise Exception(msg)
         
         LOGGER.debug("castf90 took %s seconds.", time.time() - start_time)
+
+        # TODO: Add try - except for pdfs
+        if plot == 'Yes':
+            analogs_pdf = analogs.plot_analogs(configfile=config_file)   
+        else:
+            analogs_pdf = 'dummy_plot.pdf'
+            with open(analogs_pdf, 'a'): os.utime(analogs_pdf, None)
+
         response.update_status('preparing output', 80)
-        analogs_pdf = analogs.plot_analogs(configfile=config_file)
 
         response.outputs['analog_pdf'].file = analogs_pdf
         response.outputs['config'].file = config_file #config_output_url  # config_file )

@@ -76,7 +76,7 @@ def reanalyses(start=1948, end=None, variable='slp', dataset='NCEP', timres='day
     """
     # used for NETCDF convertion
     from netCDF4 import Dataset
-    from os import path, system
+    from os import path, system, remove
     from blackswan.ocgis_module import call
     from shutil import move
     # used for NETCDF convertion
@@ -105,7 +105,7 @@ def reanalyses(start=1948, end=None, variable='slp', dataset='NCEP', timres='day
         level = None
 
     LOGGER.info('level: %s' % level)
-
+    cur_year = dt.now().year
     try:
         for year in range(start, end + 1):
             LOGGER.debug('fetching single file for %s year %s ' % (dataset, year))
@@ -146,6 +146,16 @@ def reanalyses(start=1948, end=None, variable='slp', dataset='NCEP', timres='day
                 msg = "could not set url"
                 LOGGER.exception(msg)
             try:
+                # force updating of the current year dataset
+                if year == cur_year:
+                    import urlparse
+                    from blackswan import config
+                    parsed_url = urlparse.urlparse(url)
+                    cur_filename = path.join(config.cache_path(), parsed_url.netloc, parsed_url.path.strip('/'))
+                    if path.exists(cur_filename):
+                        LOGGER.debug('Rean data for %s year forced to update' % year)
+                        remove(cur_filename)
+                # ###########################################
                 df = download(url, cache=True)
                 LOGGER.debug('single file fetched %s ' % year)
                 # convert to NETCDF4_CLASSIC
