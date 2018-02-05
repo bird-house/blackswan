@@ -47,7 +47,7 @@ class AnalogsreanalyseProcess(Process):
                          abstract="Temporal resolution of the reanalyses (only for 20CRV2)",
                          default="day",
                          data_type='string',
-                         min_occurs=1,
+                         min_occurs=0,
                          max_occurs=1,
                          allowed_values=['day', '6h']
                          ),
@@ -60,7 +60,7 @@ class AnalogsreanalyseProcess(Process):
                             " min_lat=Southern or northern latitude,"
                             " max_lat=Northern or southern latitude."
                             " For example: -80,50,20,70",
-                         min_occurs=1,
+                         min_occurs=0,
                          max_occurs=1,
                          default='-20,40,30,70',
                          ),
@@ -68,32 +68,32 @@ class AnalogsreanalyseProcess(Process):
             LiteralInput('dateSt', 'Start date of analysis period',
                          data_type='date',
                          abstract='First day of the period to be analysed',
-                         default='2013-07-15',
-                         min_occurs=1,
+                         default='2018-01-01',
+                         min_occurs=0,
                          max_occurs=1,
                          ),
 
             LiteralInput('dateEn', 'End date of analysis period',
                          data_type='date',
                          abstract='Last day of the period to be analysed',
-                         default='2013-07-20',
-                         min_occurs=1,
+                         default='2018-01-10',
+                         min_occurs=0,
                          max_occurs=1,
                          ),
 
             LiteralInput('refSt', 'Start date of reference period',
                          data_type='date',
                          abstract='First day of the period where analogues being picked',
-                         default='1970-01-01',
-                         min_occurs=1,
+                         default='1948-01-01',
+                         min_occurs=0,
                          max_occurs=1,
                          ),
 
             LiteralInput('refEn', 'End date of reference period',
                          data_type='date',
                          abstract='Last day of the period where analogues being picked',
-                         default='2012-12-31',
-                         min_occurs=1,
+                         default='2016-12-31',
+                         min_occurs=0,
                          max_occurs=1,
                          ),
 
@@ -101,16 +101,16 @@ class AnalogsreanalyseProcess(Process):
                          abstract="Remove long-term trend beforehand",
                          default='None',
                          data_type='string',
-                         min_occurs=1,
+                         min_occurs=0,
                          max_occurs=1,
                          allowed_values=['None', 'UVSpline']
                          ),
 
             LiteralInput("normalize", "normalization",
                          abstract="Normalize by subtraction of annual cycle",
-                         default='base',
+                         default='None',
                          data_type='string',
-                         min_occurs=1,
+                         min_occurs=0,
                          max_occurs=1,
                          allowed_values=['None', 'base', 'sim', 'own']
                          ),
@@ -135,7 +135,7 @@ class AnalogsreanalyseProcess(Process):
                          abstract="Distance function to define analogues",
                          default='euclidean',
                          data_type='string',
-                         min_occurs=1,
+                         min_occurs=0,
                          max_occurs=1,
                          allowed_values=['euclidean', 'mahalanobis', 'cosine', 'of']
                          ),
@@ -144,7 +144,7 @@ class AnalogsreanalyseProcess(Process):
                          abstract="Choose the format for the analogue output file",
                          default="ascii",
                          data_type='string',
-                         min_occurs=1,
+                         min_occurs=0,
                          max_occurs=1,
                          allowed_values=['ascii', 'netCDF4']
                          ),
@@ -159,9 +159,9 @@ class AnalogsreanalyseProcess(Process):
 
             LiteralInput("plot", "Plot",
                          abstract="Plot simulations and Mean/Best/Last analogs?",
-                         default='Yes',
+                         default='No',
                          data_type='string',
-                         min_occurs=1,
+                         min_occurs=0,
                          max_occurs=1,
                          allowed_values=['Yes', 'No']
                          ),

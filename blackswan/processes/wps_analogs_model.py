@@ -170,7 +170,7 @@ class AnalogsmodelProcess(Process):
 
             LiteralInput("plot", "Plot",
                          abstract="Plot simulations and Mean/Best/Last analogs?",
-                         default='Yes',
+                         default='No',
                          data_type='string',
                          min_occurs=1,
                          max_occurs=1,
