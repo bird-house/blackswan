@@ -5,7 +5,7 @@ from .wps_analogs_reanalyse import AnalogsreanalyseProcess
 from .wps_analogs_model import AnalogsmodelProcess
 from .wps_analogs_compare import AnalogscompareProcess
 from .wps_analogs_viewer import AnalogsviewerProcess
-
+from .wps_analogs_cta import AnalogsreanalyseCTA
 processes = [
     WeatherregimesreanalyseProcess(),
 #    WeatherregimesprojectionProcess(),
@@ -14,4 +14,5 @@ processes = [
     AnalogsmodelProcess(),
     AnalogscompareProcess(),
     AnalogsviewerProcess(),
+    AnalogsreanalyseCTA(),
 ]
