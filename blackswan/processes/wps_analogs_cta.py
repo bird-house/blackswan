@@ -79,6 +79,7 @@ class AnalogsreanalyseCTA(Process):
                          default='Now',
                          min_occurs=0,
                          max_occurs=1,
+                         allowed_values=['Now']
                          ),
 
             LiteralInput('refSt', 'Start date of reference period',
@@ -95,6 +96,7 @@ class AnalogsreanalyseCTA(Process):
                          default='Now',
                          min_occurs=0,
                          max_occurs=1,
+                         allowed_values=['Now']
                          ),
 
             LiteralInput("detrend", "Detrend",
@@ -157,24 +159,14 @@ class AnalogsreanalyseCTA(Process):
                          min_occurs=0,
                          max_occurs=1,
                          ),
-
-            # LiteralInput("plot", "Plot",
-            #             abstract="Plot simulations and Mean/Best/Last analogs?",
-            #             default='No',
-            #             data_type='string',
-            #             min_occurs=0,
-            #             max_occurs=1,
-            #             allowed_values=['Yes', 'No']
-            #             ),
         ]
 
         outputs = [
-            ComplexOutput("analog_pdf", "Maps with mean analogs and simulation",
-                          abstract="Analogs Maps",
+            ComplexOutput("analog_pdf", "Return Periods and statistics",
+                          abstract="Analogs Stats",
                           supported_formats=[Format('image/pdf')],
                           as_reference=True,
                           ),
-
             ComplexOutput("config", "Config File",
                           abstract="Config file used for the Fortran process",
                           supported_formats=[Format("text/plain")],
@@ -643,7 +635,7 @@ class AnalogsreanalyseCTA(Process):
             LOGGER.debug("castf90 command: %s", cmd)
             output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
             LOGGER.info('analogue output:\n %s', output)
-            response.update_status('**** CASTf90 suceeded', 70)
+            response.update_status('**** CASTf90 suceeded', 40)
         except CalledProcessError as e:
             msg = 'CASTf90 failed:\n{0}'.format(e.output)
             LOGGER.exception(msg)
@@ -657,9 +649,66 @@ class AnalogsreanalyseCTA(Process):
         #    analogs_pdf = 'dummy_plot.pdf'
         #    with open(analogs_pdf, 'a'): os.utime(analogs_pdf, None)
 
+
+
+        # --------------- R cont analogs calcs -----------------------------------
+
+        #######################
+        # call the R scripts
+        #######################
+        response.update_status('Start calculation of the stats and Return Periods ', 50)
+        import shlex
+        # import subprocess
+        from blackswan import config
+        from blackswan.visualisation import pdfmerge
+        from os.path import curdir, exists, join
+
+        try:
+            #rworkspace = curdir
+            Rsrc = config.Rsrc_dir()
+            Rfile = 'analogs_diags-prox.R'
+            Rdatfile = 'analogs_RT.Rdat'
+            probs_c=0.7
+            probs_n=0.3
+            # infile = model_season  # model_subset #model_ponderate
+            # modelname = model
+            # yr1 = start.year
+            # yr2 = end.year
+            # ip, output_graphics = mkstemp(dir=curdir, suffix='.pdf')
+            # ip, file_pca = mkstemp(dir=curdir, suffix='.txt')
+            # ip, file_class = mkstemp(dir=curdir, suffix='.Rdat')
+
+            args = ['Rscript', join(Rsrc, Rfile),
+                    '%s' % output_file, '%s' % probs_c,
+                    '%s' % probs_n, '%s' % Rdatfile]
+
+            LOGGER.info('Rcall builded')
+            LOGGER.debug('ARGS: %s'%(args))
+        except:
+            msg = 'failed to build the R command'
+            LOGGER.exception(msg)
+            raise Exception(msg)
+        try:
+            output, error = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+            LOGGER.info('R outlog info:\n %s ' % output)
+            LOGGER.exception('R outlog errors:\n %s ' % error)
+            if len(output) > 0:
+                response.update_status('**** Return Periods with R suceeded', 60)
+            else:
+                LOGGER.exception('NO! output returned from R call')
+            analogs_pdf = pdfmerge(['analogs_score-diags_new.pdf','analogs_RP-diags_new.pdf'])
+        except:
+            msg = 'ReturnPeriods in R'
+            LOGGER.exception(msg)
+            raise Exception(msg)
+
+        response.update_status('Calculation of Return Periods done ', 70)
+
+        # --------------- END of R cont analogs calcs ----------------------------
+
         response.update_status('preparing output', 75)
 
-        # response.outputs['analog_pdf'].file = analogs_pdf 
+        response.outputs['analog_pdf'].file = analogs_pdf 
 
         response.outputs['config'].file = config_file
         response.outputs['analogs'].file = output_file

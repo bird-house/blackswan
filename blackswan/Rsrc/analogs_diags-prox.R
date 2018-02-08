@@ -156,7 +156,8 @@ l <- (l+theme_bw()
       + scale_x_date()
       + labs(y="Return time [yr]", x=""))
 print(l)
-png("analogs_RP-diags_new.png") #,bg="transparent")
+#png("analogs_RP-diags_new.png") #,bg="transparent")
+pdf("analogs_RP-diags_new.pdf")
 grid.newpage()
 vpp_ <- viewport(width = 1, height = 0.5, x = 0.5, y = 0.75)  # upper
 vpl_ <- viewport(width = 1, height = 0.5, x = 0.5, y = 0.25)  # lower
@@ -206,7 +207,8 @@ l <- (l+ theme_bw()
       + ylim(r2)
       + labs(x="",y="Correlation")) 
 print(l)
-png("analogs_score-diags_new.png")
+#png("analogs_score-diags_new.png")
+pdf("analogs_score-diags_new.pdf")
 grid.newpage()
 vpp_ <- viewport(width = 1, height = 0.33, x = 0.5, y = 0.83)  # upper
 vpq_ <- viewport(width = 1, height = 0.33, x = 0.5, y = 0.5 ) # middle
