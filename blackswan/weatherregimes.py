@@ -44,6 +44,7 @@ def get_anomalies(nc_file, frac=0.2, reference=None, method='ocgis', sseas='seri
     :returns str: path to output netCDF file
     """
     from netCDF4 import Dataset
+    from os import environ
 
     if variable is None:
         variable = get_variable(nc_file)
@@ -64,7 +65,7 @@ def get_anomalies(nc_file, frac=0.2, reference=None, method='ocgis', sseas='seri
 
             ip2, nc_anual_cycle = mkstemp(dir='.', suffix='.nc')
 
-            cdo = Cdo()
+            cdo = Cdo(env=environ)
             #ip, nc_anual_cycle_tmp = mkstemp(dir='.', suffix='.nc')
             # TODO: if reference is none, use utils.get_time for nc_file to set the ref range
             #       But will need to fix 360_day issue (use get_time_nc from analogs)
@@ -100,7 +101,7 @@ def get_anomalies(nc_file, frac=0.2, reference=None, method='ocgis', sseas='seri
         #import statsmodels.api as sm
         #from numpy import tile, empty, linspace
         from cdo import Cdo
-        cdo = Cdo()
+        cdo = Cdo(env=environ)
         # variable = utils.get_variable(nc_file)
         ds = Dataset(nc_anual_cycle, mode='a')
         vals = ds.variables[variable]
@@ -110,6 +111,23 @@ def get_anomalies(nc_file, frac=0.2, reference=None, method='ocgis', sseas='seri
 
         if ('serial' not in sseas):
             # Multiprocessing =======================
+            #-----------------------
+            try:
+                import ctypes
+                # TODO: This lib is for linux
+                mkl_rt = ctypes.CDLL('libmkl_rt.so')
+                nth = mkl_rt.mkl_get_max_threads()
+                LOGGER.debug('Current number of threads: %s' % (nth))
+                mkl_rt.mkl_set_num_threads(ctypes.byref(ctypes.c_int(64)))
+                nth = mkl_rt.mkl_get_max_threads()
+                LOGGER.debug('NEW number of threads: %s' % (nth))
+                # TODO: Does it \/\/\/ work with default shell=False in subprocess... (?)
+                environ['MKL_NUM_THREADS']=str(nth)
+                environ['OMP_NUM_THREADS']=str(nth)
+            except Exception as e:
+                msg = 'Failed to set THREADS %s ' % e
+                LOGGER.debug(msg)
+            #-----------------------
 
             from multiprocessing import Pool
             pool = Pool()

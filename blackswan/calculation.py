@@ -56,14 +56,14 @@ def remove_mean_trend(fana, varname):
     from netCDF4 import Dataset
     import uuid
     from scipy.interpolate import UnivariateSpline
-    from os import system
+    from os import system, environ
 
     if type(fana) == list:
         fana = fana[0]
 
     backup_ana = 'orig_mod_'+path.basename(fana)
 
-    cdo = Cdo()
+    cdo = Cdo(env=environ)
 
     # create backup of input file
     # Again, an issue with cdo versioning.

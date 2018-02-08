@@ -465,7 +465,7 @@ class AnalogsmodelProcess(Process):
             # Get Levels
 
             from cdo import Cdo
-            cdo = Cdo()
+            cdo = Cdo(env=os.environ)
 
             lev_res=[]
             if(dimlen>3):

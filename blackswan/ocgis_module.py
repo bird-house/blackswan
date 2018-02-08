@@ -251,6 +251,7 @@ def call(resource=[], variable=None, dimension_map=None, agg_selection=True, cal
         try:
             if (cdover=='system'):
                 from os import system
+                LOGGER.debug('Trying user cdo')
                 remap = 'remap%s' % regrid_options
                 output = '%s.nc' % uuid.uuid1()
                 output = abspath(curdir)+'/'+output
@@ -258,10 +259,13 @@ def call(resource=[], variable=None, dimension_map=None, agg_selection=True, cal
                 system(comcdo)
                 
                 if(isfile(output)==False):
+                    LOGGER.debug('User cdo failed, trying system')
                     comcdo = '/usr/bin/cdo -O %s,%s %s %s' % (remap, regrid_destination, geom_file, output)
                     system(comcdo)
                 
-                if(isfile(output)==False): cdover='python'
+                if(isfile(output)==False):
+                    cdover='python'
+                    LOGGER.debug('System cdo failed, trying python cdo')
 
                 # need to substitute by subprocess call
                 # TODO: If system failed - py-cdo used insted
@@ -271,7 +275,9 @@ def call(resource=[], variable=None, dimension_map=None, agg_selection=True, cal
             if (cdover=='python'):
                 from tempfile import mkstemp
                 from cdo import Cdo
-                cdo = Cdo()
+                from os import environ
+                cdo = Cdo(env=environ)
+                LOGGER.debug('Trying python cdo')
                 output = '%s.nc' % uuid.uuid1()
                 remap = 'remap%s' % regrid_options
                 call = [op for op in dir(cdo) if remap in op]
