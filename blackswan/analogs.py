@@ -230,7 +230,7 @@ def seacyc(archive, simulation, method='base'):
         from blackswan.ocgis_module import call
         from blackswan.utils import get_variable
         from cdo import Cdo
-        cdo = Cdo()
+        cdo = Cdo(env=os.environ)
 
         if method == 'base':
             seasoncyc_base = cdo.ydaymean(

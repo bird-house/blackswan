@@ -434,7 +434,7 @@ class AnalogsreanalyseCTA(Process):
             if timres == '6h':
                 from cdo import Cdo
                 
-                cdo = Cdo()
+                cdo = Cdo(env=os.environ)
                 model_subset = '%s.nc' % uuid.uuid1()
                 tmp_f = '%s.nc' % uuid.uuid1()
 
