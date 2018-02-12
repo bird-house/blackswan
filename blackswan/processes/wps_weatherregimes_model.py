@@ -17,7 +17,7 @@ from datetime import time as dt_time
 from blackswan import weatherregimes as wr
 from blackswan.utils import archive, archiveextract, get_calendar
 from tempfile import mkstemp
-from os import path
+from os import path, system
 
 import logging
 LOGGER = logging.getLogger("PYWPS")
@@ -282,14 +282,63 @@ class WeatherregimesmodelProcess(Process):
         resource = tmp_resource
 
         # Here start trick with z... levels and regriding...
-        # Otherwise call will give memory error for hires models with geop
+        # Otherwise call will give memory error for hires models like MIROC4h
         # TODO: Add level and domain selection as in wps_analogs_model for 4D var.
 
         variable = get_variable(resource)
-        model_subset = call(
-            resource=resource, variable=variable,
-            geom=bbox, spatial_wrapping='wrap', time_range=time_range,  # conform_units_to=conform_units_to
-        )
+
+        from blackswan.datafetch import reanalyses
+        import uuid
+        ref_var = 'slp'
+        refR = 'NCEP'
+        ref_rea = reanalyses(start=2014, end=2014, variable=ref_var, dataset=refR)
+
+        regr_res = []
+        for z in resource:
+            tmp_n='tmp_%s' % (uuid.uuid1())
+            # regrid
+            b0=call(resource=z, variable=variable,
+                    spatial_wrapping='wrap', cdover='system',
+                    regrid_destination=ref_rea[0], regrid_options='bil', prefix=tmp_n)
+            # TODO: Use cdo regrid outside call - before call... 
+            # Some issues with produced ocgis file inside ocgis_module cdo regrid:
+            # cdo remapbil (Abort): Unsupported projection coordinates (Variable: psl)!
+
+            # select domain
+            b01=call(resource=b0, geom=bbox, spatial_wrapping='wrap', prefix='levregr_'+path.basename(z)[0:-3])
+            tbr='rm -f %s' % (b0)
+            system(tbr)
+            tbr='rm -f %s.nc' % (tmp_n)
+            system(tbr)
+            # get full resource
+            regr_res.append(b01)
+
+        model_subset = call(regr_res, time_range=time_range)
+
+        for i in regr_res:
+            tbr='rm -f %s' % (i)
+            system(tbr)
+
+        # Get domain
+        # from cdo import Cdo
+        # from os import environ
+        # cdo = Cdo(env=environ)
+
+        # regr_res = []
+        # for res_fn in resource:
+        #    tmp_f = 'dom_' + path.basename(res_fn)
+        #    comcdo = '%s,%s,%s,%s' % (bbox[0],bbox[2],bbox[1],bbox[3])
+        #    cdo.sellonlatbox(comcdo, input=res_fn, output=tmp_f)
+        #    # tmp_f = call(resource=res_fn, geom=bbox, spatial_wrapping='wrap', prefix=tmp_f)
+        #    regr_res.append(tmp_f)
+        #    LOGGER.debug('File with selected domain: %s ' % (tmp_f))
+
+        # model_subset = call(
+        #    # resource=resource, variable=variable,
+        #    resource=regr_res, variable=variable,
+        #    geom=bbox, spatial_wrapping='wrap', time_range=time_range,  # conform_units_to=conform_units_to
+        # )
+
         LOGGER.info('Dataset subset done: %s ' % model_subset)
         response.update_status('dataset subsetted', 18)
 
