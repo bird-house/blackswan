@@ -53,7 +53,7 @@ class AnalogsmodelProcess(Process):
                             " min_lat=Southern or northern latitude,"
                             " max_lat=Northern or southern latitude."
                             " For example: -80,50,20,70",
-                         min_occurs=1,
+                         min_occurs=0,
                          max_occurs=1,
                          default='-20,40,30,70',
                          ),
@@ -80,7 +80,7 @@ class AnalogsmodelProcess(Process):
                          data_type='date',
                          abstract='First day of the period to be analysed',
                          default='2000-07-15',
-                         min_occurs=1,
+                         min_occurs=0,
                          max_occurs=1,
                          ),
 
@@ -88,7 +88,7 @@ class AnalogsmodelProcess(Process):
                          data_type='date',
                          abstract='Last day of the period to be analysed',
                          default='2000-07-18',
-                         min_occurs=1,
+                         min_occurs=0,
                          max_occurs=1,
                          ),
 
@@ -96,7 +96,7 @@ class AnalogsmodelProcess(Process):
                          data_type='date',
                          abstract='First day of the period where analogues being picked',
                          default='1950-01-01',
-                         min_occurs=1,
+                         min_occurs=0,
                          max_occurs=1,
                          ),
 
@@ -104,7 +104,7 @@ class AnalogsmodelProcess(Process):
                          data_type='date',
                          abstract='Last day of the period where analogues being picked',
                          default='1999-12-31',
-                         min_occurs=1,
+                         min_occurs=0,
                          max_occurs=1,
                          ),
 
@@ -112,7 +112,7 @@ class AnalogsmodelProcess(Process):
                          abstract="Remove long-term trend beforehand",
                          default='None',
                          data_type='string',
-                         min_occurs=1,
+                         min_occurs=0,
                          max_occurs=1,
                          allowed_values=['None', 'UVSpline']
                          ),
@@ -121,7 +121,7 @@ class AnalogsmodelProcess(Process):
                          abstract="Normalize by subtraction of annual cycle",
                          default='base',
                          data_type='string',
-                         min_occurs=1,
+                         min_occurs=0,
                          max_occurs=1,
                          allowed_values=['None', 'base', 'sim', 'own']
                          ),
@@ -146,7 +146,7 @@ class AnalogsmodelProcess(Process):
                          abstract="Distance function to define analogues",
                          default='euclidean',
                          data_type='string',
-                         min_occurs=1,
+                         min_occurs=0,
                          max_occurs=1,
                          allowed_values=['euclidean', 'mahalanobis', 'cosine', 'of']
                          ),
@@ -155,7 +155,7 @@ class AnalogsmodelProcess(Process):
                          abstract="Choose the format for the analogue output file",
                          default="ascii",
                          data_type='string',
-                         min_occurs=1,
+                         min_occurs=0,
                          max_occurs=1,
                          allowed_values=['ascii', 'netCDF4']
                          ),
@@ -172,7 +172,7 @@ class AnalogsmodelProcess(Process):
                          abstract="Plot simulations and Mean/Best/Last analogs?",
                          default='No',
                          data_type='string',
-                         min_occurs=1,
+                         min_occurs=0,
                          max_occurs=1,
                          allowed_values=['Yes', 'No']
                          ),
@@ -279,7 +279,6 @@ class AnalogsmodelProcess(Process):
 
         try:
             response.update_status('read input parameter : %s ' % dt.now(), 7)
-
             resource = archiveextract(resource=rename_complexinputs(request.inputs['resource']))
             refSt = request.inputs['refSt'][0].data
             refEn = request.inputs['refEn'][0].data
