@@ -139,7 +139,7 @@ class AnalogsreanalyseProcess(Process):
                          data_type='string',
                          min_occurs=0,
                          max_occurs=1,
-                         allowed_values=['euclidean', 'mahalanobis', 'cosine', 'of']
+                         allowed_values=['euclidean', 'mahalanobis', 'cosine']
                          ),
 
             LiteralInput("outformat", "output file format",

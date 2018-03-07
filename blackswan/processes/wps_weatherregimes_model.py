@@ -67,7 +67,7 @@ class WeatherregimesmodelProcess(Process):
 
             LiteralInput("period", "Period for weatherregime calculation",
                          abstract="Period for analysing the dataset",
-                         default="19700101-20101231",
+                         default="19700101-20051231",
                          data_type='string',
                          min_occurs=1,
                          max_occurs=1,

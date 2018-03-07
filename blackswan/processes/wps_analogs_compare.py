@@ -33,7 +33,7 @@ class AnalogscompareProcess(Process):
     def __init__(self):
         inputs = [
             ComplexInput('resource', 'Resource',
-                         abstract='NetCDF Files or archive (tar/zip) containing netCDF files.',
+                         abstract='NetCDF Files or archive (tar/zip) containing daily netCDF files.',
                          metadata=[Metadata('Info')],
                          min_occurs=1,
                          max_occurs=1000,
@@ -128,7 +128,7 @@ class AnalogscompareProcess(Process):
                          data_type='string',
                          min_occurs=1,
                          max_occurs=1,
-                         allowed_values=['euclidean', 'mahalanobis', 'cosine', 'of']
+                         allowed_values=['euclidean', 'mahalanobis', 'cosine']
                          ),
 
             LiteralInput("outformat", "output file format",
