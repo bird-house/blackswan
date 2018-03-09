@@ -5,6 +5,7 @@ import time  # performance test
 import subprocess
 from subprocess import CalledProcessError
 import uuid
+import psutil
 
 from netCDF4 import Dataset
 
@@ -23,6 +24,7 @@ from blackswan.ocgis_module import call
 from blackswan import analogs
 from blackswan.utils import rename_complexinputs
 from blackswan.utils import get_variable
+from blackswan.utils import get_files_size
 from blackswan.calculation import remove_mean_trend
 from blackswan.log import init_process_logger
 
@@ -387,6 +389,14 @@ class AnalogsreanalyseCTA(Process):
         LOGGER.debug("start and end time: %s - %s" % (start, end))
         time_range = [start, end]
 
+        # Checking memory and dataset size
+        model_size = get_files_size(model_nc)
+        memory_avail = psutil.virtual_memory().available
+        thrs = 0.3 # 50%
+        if (model_size >= thrs * memory_avail):
+            ser_r = True
+        else:
+            ser_r = False
 
         # For 20CRV2 geopotential height, daily dataset for 100 years is about 50 Gb
         # So it makes sense, to operate it step-by-step
@@ -422,10 +432,21 @@ class AnalogsreanalyseCTA(Process):
             ds.close()
             model_subset_tmp = call(inter_subset_tmp, variable='z%s' % level)
         else:
-            model_subset_tmp = call(resource=model_nc, variable=var,
-                                    geom=bbox, spatial_wrapping='wrap', time_range=time_range,
-                                    # conform_units_to=conform_units_to
-                                    )
+            if ser_r:
+                LOGGER.debug('Process reanalysis step-by-step')
+                tmp_total = []
+                for z in model_nc:
+                    tmp_n = 'tmp_%s' % (uuid.uuid1())
+                    b0=call(resource=z, variable=var, geom=bbox, spatial_wrapping='wrap',
+                            prefix='Rdom_'+os.path.basename(z)[0:-3])
+                    tmp_total.append(b0)
+                tmp_total = sorted(tmp_total, key=lambda i: os.path.splitext(os.path.basename(i))[0])
+                model_subset_tmp = call(resource=tmp_total, variable=var, time_range=time_range)
+            else:
+                LOGGER.debug('Using whole dataset at once')
+                model_subset_tmp = call(resource=model_nc, variable=var,
+                                        geom=bbox, spatial_wrapping='wrap', time_range=time_range,
+                                        )
 
         # If dataset is 20CRV2 the 6 hourly file should be converted to daily.  
         # Option to use previously 6h data from cache (if any) and not download daily files.
