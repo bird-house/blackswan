@@ -265,7 +265,6 @@ class WeatherregimesmodelProcess(Process):
         # get the required bbox and time region from resource data
         ############################################################
         response.update_status('start subsetting', 17)
-        # from flyingpigeon.weatherregimes import get_level
 
         from blackswan.ocgis_module import call
         from blackswan.utils import get_variable, get_timerange
@@ -296,10 +295,34 @@ class WeatherregimesmodelProcess(Process):
         regr_res = []
         for z in resource:
             tmp_n='tmp_%s' % (uuid.uuid1())
-            # regrid
-            b0=call(resource=z, variable=variable,
+
+            # XXXXXXX
+            s,e = get_timerange(z)
+            tmpSt = dt.strptime(s,'%Y%m%d')
+            tmpEn = dt.strptime(e,'%Y%m%d')
+            tmpSt = dt.combine(tmpSt, dt_time(0,0))
+            tmpEn = dt.combine(tmpEn, dt_time(23,0))
+
+            if ((tmpSt <= start ) and (tmpEn >= end)):
+                LOGGER.debug('Resource contains full record, selecting : %s ' % (time_range))
+                full_res = call(z, variable=variable, time_range=time_range)
+            else:
+                full_res = z
+
+            LOGGER.debug('The subset from the big model file, or initial file: %s ' % (full_res))
+
+            # XXXXXXX
+
+            # TODO: regrid needs here
+            # Check how to manage one big file with geopotential
+            # TODO:
+            # Adapt to work with levels for geopotential (check how its done for reanalysis process)
+
+            # b0=call(resource=z, variable=variable,
+            b0=call(resource=full_res, variable=variable,
                     spatial_wrapping='wrap', cdover='system',
                     regrid_destination=ref_rea[0], regrid_options='bil', prefix=tmp_n)
+
             # TODO: Use cdo regrid outside call - before call... 
             # Some issues with produced ocgis file inside ocgis_module cdo regrid:
             # cdo remapbil (Abort): Unsupported projection coordinates (Variable: psl)!
