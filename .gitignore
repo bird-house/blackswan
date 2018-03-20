@@ -82,4 +82,4 @@ testdata.json
 *.mod
 *.out
 
-
+WS/*
