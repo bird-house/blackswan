@@ -303,13 +303,19 @@ class WeatherregimesreanalyseProcess(Process):
         LevMulti = False
 
         # ===========================================================================================
-        if ('z' in variable):  
+        # Temporary add step-by-step also for pressure... for slow VM machine...
+        if ('z' in variable) or ('p' in variable):
             tmp_total = []
             origvar = get_variable(model_nc)
 
+            if ('z' in variable):
+                level_range = [int(level), int(level)]
+            else:
+                level_range = None
+
             if (LevMulti == False):
                 for z in model_nc:
-                    b0 = call(resource=z, variable=origvar, level_range=[int(level), int(level)], geom=bbox,
+                    b0 = call(resource=z, variable=origvar, level_range=level_range, geom=bbox,
                     spatial_wrapping='wrap', prefix='levdom_'+basename(z)[0:-3])
                     tmp_total.append(b0)
             else:
@@ -356,15 +362,18 @@ class WeatherregimesreanalyseProcess(Process):
                 tbr = 'rm -f %s' % (i)
                 system(tbr)
 
-            # Create new variable
-            ds = Dataset(inter_subset_tmp, mode='a')
-            z_var = ds.variables.pop(origvar)
-            dims = z_var.dimensions
-            new_var = ds.createVariable('z%s' % level, z_var.dtype, dimensions=(dims[0], dims[2], dims[3]))
-            new_var[:, :, :] = squeeze(z_var[:, 0, :, :])
-            # new_var.setncatts({k: z_var.getncattr(k) for k in z_var.ncattrs()})
-            ds.close()
-            model_subset = call(inter_subset_tmp, variable='z%s' % level)
+            if ('z' in variable):
+                # Create new variable for Z geop
+                ds = Dataset(inter_subset_tmp, mode='a')
+                z_var = ds.variables.pop(origvar)
+                dims = z_var.dimensions
+                new_var = ds.createVariable('z%s' % level, z_var.dtype, dimensions=(dims[0], dims[2], dims[3]))
+                new_var[:, :, :] = squeeze(z_var[:, 0, :, :])
+                # new_var.setncatts({k: z_var.getncattr(k) for k in z_var.ncattrs()})
+                ds.close()
+                model_subset = call(inter_subset_tmp, variable='z%s' % level)
+            else:
+                model_subset = inter_subset_tmp
         else:
             model_subset = call(resource=model_nc, variable=variable,
                                 geom=bbox, spatial_wrapping='wrap', time_range=time_range,
