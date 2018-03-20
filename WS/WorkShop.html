@@ -14,6 +14,7 @@
 <p><a href="#birdy">3. Run Hello process with birdy </a></p>
 <p><a href="#gui">4. Using Phoenix WPS GUI  </a></p>
 <p><a href="#esgf">5. Working with ESGF data  </a></p>
+<p><a href="#jupyter">6. Run Hello from Jupyter notebook (with owslib client)  </a></p>
 
 <p>
 You have already preinstalled main components of WPS system.
@@ -257,7 +258,7 @@ Let's add new, <cite>Emu</cite> WPS service
 
 <p> Click <cite>Register a new Service</cite> and fill the fields as follows: </p> <br /><br />
 
-<img src="TP1/TP13.png" alt="TP12" style="width:66%;height:auto;"/>
+<img src="TP1/TP13.png" alt="TP13" style="width:66%;height:auto;"/>
 
 <p> That's it! Now Emu processes is available in the menu. </p>
 <p style="color:green;font-size:14px; font-weight:bold; font-style:italic;">Administrator have to do it only once, so if you need to register WPS service, now you know how. </p>
@@ -270,7 +271,7 @@ Let's add new, <cite>Emu</cite> WPS service
     Click to the Details of the run. There will be the log of the job, and the input/output bookmarks. <br /><br />
     Go to the output and see the result of the job: <br /><br /> </p>
 
-<img src="TP1/TP14.png" alt="TP12" style="width:66%;height:auto;"/>
+<img src="TP1/TP14.png" alt="TP14" style="width:66%;height:auto;"/>
 
 <p> Basically, this is how to run any process using <cite>Phoenix GUI</cite> <br /><br />
     If the process requires complex inputs, say from the ESGF search results, the <cite>Wizard</cite> menu should be used instead of <cite>Processes</cite>.<br /><br />
@@ -306,8 +307,8 @@ https://localhost:8443 </p>
 </p>
 
 <p> At this step you need to update your ESGF credential! (Only once) - Press update <br /><br /></p>
-<img src="TP1/TP15.png" alt="TP12" style="width:66%;height:auto;"/>
-<img src="TP1/TP16.png" alt="TP12" style="width:66%;height:auto;"/>
+<img src="TP1/TP15.png" alt="TP15" style="width:66%;height:auto;"/>
+<img src="TP1/TP16.png" alt="TP16" style="width:66%;height:auto;"/>
 
 <p> 7. Search for <cite>ESGF</cite> data as follows:<br /><br />
 start year: 1950<br />
@@ -326,7 +327,7 @@ If you press model in Categories, you will se which models are selected:<br /><b
 </p>
 
 
-<img src="TP1/TP17.png" alt="TP12" style="width:66%;height:auto;"/>
+<img src="TP1/TP17.png" alt="TP17" style="width:66%;height:auto;"/>
 
 <p> Now press Next, optionnaly you may give a caption name for the run, and press Done<br /><br />
 
@@ -337,12 +338,63 @@ You may monitor it's execution in Details section. Refresh list, and see the out
 One output netCDF file will be provided, along with tar archive with all results.<br />
 </p>
 
-<img src="TP1/TP18.png" alt="TP12" style="width:66%;height:auto;"/>
+<img src="TP1/TP18.png" alt="TP18" style="width:66%;height:auto;"/>
 
 <p> Also you can 'Show on Map' your results: <br /><br /></p>
-<img src="TP1/TP19.png" alt="TP12" style="width:66%;height:auto;"/>
+<img src="TP1/TP19.png" alt="TP19" style="width:66%;height:auto;"/>
 
 <p> As an exercise, try to run the same calculation on https://wps-test.ipsl.jussieu.fr:8443 <br /><br /></p>
+
+<p><a name="jupyter"></a></p>
+
+<h2> 6. Run Hello from Jupyter notebook (with owslib client)  </h2>
+
+<p> Now, we will work in <cite>Jupyter</cite> notebook <br /></p>
+
+<p> First, you need to <cite>pull</cite> the exercises from the <cite>gitgub</cite> <br /></p>
+<pre style="background:#f9f9f9;color:#080808">$ cd ~/birdhouse/blackswan/ <br />$ git pull</pre>
+
+<p> For the training we will work in <cite>~/birdhouse/blackswan/WS/</cite> folder under the <span style="color:#FF0000;"><cite>blackswan</cite></span> conda environment. <br /><br />
+Thus we will be able to run different notebooks for different services.</p>
+
+<pre style="background:#f9f9f9;color:#080808">$ cd ~/birdhouse/blackswan/WS/ <br /></pre>
+
+<p> Now, you need to <cite>activate</cite> an environment: <br /></p>
+<pre style="background:#f9f9f9;color:#080808">$ source activate environment <br /></pre>
+
+<p> If it doesn’t work – it means that you did not add  <span style="color:#FF0000;">$HOME/anaconda/bin</span> to your  <span style="color:#FF0000;"><cite>~/.bashrc</cite></span> file. <br />
+
+Instead, you may use: </p>
+<pre style="background:#f9f9f9;color:#080808">$ export PATH=$HOME/anaconda/bin:$PATH <br />$ source activate environment</pre>
+
+<p> or <br /></p>
+
+<pre style="background:#f9f9f9;color:#080808">$ source ~/anaconda/bin/activate blackswan <br /></pre>
+
+<p> But we strongly recommend to add anaconda bin path to <span style="color:#FF0000;"><cite>~/.bashrc</cite></span> <br /></p>
+
+<p> When the blackswan environment is active, you should see it in your terminal like this: <br /></p>
+
+<pre style="background:#0c1021;color:#f8f8f8">(blackswan) username:<span style="color:#fbde2d">~</span>/birdhouse/blackswan/WS$</pre>
+
+<p> Now install <cite>Jupyter</cite> in your environment with <cite>pip</cite>: <br /></p>
+
+<pre style="background:#f9f9f9;color:#080808">$ cd ~/birdhouse/blackswan/WS/ <br />$ pip install jupyter </pre>
+
+<p> And run it: <br /></p>
+<pre style="background:#f9f9f9;color:#080808">$ jupyter notebook </pre>
+
+<p> You will get the browser with address http://localhost:8888/tree <br /></p>
+<p> Something similar to this: <br /></p>
+<img src="TP1/TP20.png" alt="TP20" style="width:66%;height:auto;"/>
+
+<p> Now, just open the notebook and follow the instructions there <br /></p>
+
+<p> Start with <span style="color:#FF0000;"><cite>WPS_Emu_hello.ipynb</cite></span> notebook <br /><br />
+after check the <span style="color:#FF0000;"><cite>WPS_Hum_OWSLIB.ipynb</cite></span><br /><br />
+and finally <span style="color:#FF0000;"><cite>WPS_anattribution.ipynb</cite></span><br /><br />
+</p>
+
 
 <p><a href="#top">Back to Top</a></p>
 
