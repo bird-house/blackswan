@@ -82,7 +82,6 @@ def reanalyses(start=1948, end=None, variable='slp', dataset='NCEP', timres='day
     # used for NETCDF convertion
 
     try:
-        from datetime import datetime as dt
 
         if end is None:
             end = dt.now().year
@@ -106,6 +105,8 @@ def reanalyses(start=1948, end=None, variable='slp', dataset='NCEP', timres='day
 
     LOGGER.info('level: %s' % level)
     cur_year = dt.now().year
+    cur_month = dt.now().month
+    cur_day = dt.now().day
     try:
         for year in range(start, end + 1):
             LOGGER.debug('fetching single file for %s year %s ' % (dataset, year))
@@ -153,8 +154,13 @@ def reanalyses(start=1948, end=None, variable='slp', dataset='NCEP', timres='day
                     parsed_url = urlparse.urlparse(url)
                     cur_filename = path.join(config.cache_path(), parsed_url.netloc, parsed_url.path.strip('/'))
                     if path.exists(cur_filename):
-                        LOGGER.debug('Rean data for %s year forced to update' % year)
-                        remove(cur_filename)
+                        fn_time = dt.fromtimestamp(path.getmtime(cur_filename))
+                        LOGGER.debug('Rean data for %s year creation time: ' % fn_time)
+                        if (fn_time.year == cur_year) and (fn_time.month == cur_month) and (fn_time.day == cur_day):
+                            LOGGER.debug('Rean data for %s year is up-to-date' % year)
+                        else:
+                            LOGGER.debug('Rean data for %s year forced to update' % year)
+                            remove(cur_filename)
                 # ###########################################
                 df = download(url, cache=True)
                 LOGGER.debug('single file fetched %s ' % year)
