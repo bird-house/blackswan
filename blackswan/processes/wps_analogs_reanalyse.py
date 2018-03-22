@@ -262,7 +262,7 @@ class AnalogsreanalyseProcess(Process):
         ################################
 
         try:
-            response.update_status('read input parameter : %s ' % dt.now(), 7)
+            response.update_status('read input parameter : %s ' % dt.now(), 6)
 
             refSt = request.inputs['refSt'][0].data
             refEn = request.inputs['refEn'][0].data
@@ -272,11 +272,22 @@ class AnalogsreanalyseProcess(Process):
             nanalog = request.inputs['nanalog'][0].data
             timres = request.inputs['timeres'][0].data
 
-            #bbox = [-80, 20, 50, 70]
-            # TODO: Add checking for wrong cordinates and apply default if nesessary
+            bboxDef = '-20,40,30,70' # in general format
+
             bbox = []
             bboxStr = request.inputs['BBox'][0].data
+            LOGGER.debug('BBOX selected by user: %s ' % (bboxStr))
             bboxStr = bboxStr.split(',')
+
+            # Checking for wrong cordinates and apply default if nesessary
+            if (abs(float(bboxStr[0])) > 180 or
+                    abs(float(bboxStr[1]) > 180) or
+                    abs(float(bboxStr[2]) > 90) or
+                    abs(float(bboxStr[3])) > 90):
+                bboxStr = bboxDef # request.inputs['BBox'].default  # .default doesn't work anymore!!!
+                LOGGER.debug('BBOX is out of the range, using default instead: %s ' % (bboxStr))
+                bboxStr = bboxStr.split(',')
+
             bbox.append(float(bboxStr[0]))
             bbox.append(float(bboxStr[2]))
             bbox.append(float(bboxStr[1]))
@@ -294,11 +305,8 @@ class AnalogsreanalyseProcess(Process):
             model_var = request.inputs['reanalyses'][0].data
             model, var = model_var.split('_')
 
-            # experiment = self.getInputValues(identifier='experiment')[0]
-            # dataset, var = experiment.split('_')
-            # LOGGER.info('environment set')
             LOGGER.info('input parameters set')
-            response.update_status('Read in and convert the arguments', 8)
+            response.update_status('Read in and convert the arguments', 7)
         except Exception as e:
             msg = 'failed to read input prameter %s ' % e
             LOGGER.exception(msg)
@@ -308,17 +316,11 @@ class AnalogsreanalyseProcess(Process):
         # convert types and set environment
         ######################################
         try:
-            response.update_status('Preparing enviroment converting arguments', 9)
+            response.update_status('Preparing enviroment converting arguments', 8)
             LOGGER.debug('date: %s %s %s %s ' % (type(refSt), refEn, dateSt, dateSt))
 
             start = min(refSt, dateSt)
             end = max(refEn, dateEn)
-
-            #
-            # refSt = dt.strftime(refSt, '%Y-%m-%d')
-            # refEn = dt.strftime(refEn, '%Y-%m-%d')
-            # dateSt = dt.strftime(dateSt, '%Y-%m-%d')
-            # dateEn = dt.strftime(dateEn, '%Y-%m-%d')
 
             if normalize == 'None':
                 seacyc = False
@@ -341,7 +343,7 @@ class AnalogsreanalyseProcess(Process):
         # set the environment
         ###########################
 
-        response.update_status('fetching data from archive', 10)
+        response.update_status('fetching data from archive', 9)
 
         try:
             if model == 'NCEP':
@@ -385,7 +387,7 @@ class AnalogsreanalyseProcess(Process):
             LOGGER.exception(msg)
             raise Exception(msg)
 
-        response.update_status('subsetting region of interest', 17)
+        response.update_status('subsetting region of interest', 10)
         # from flyingpigeon.weatherregimes import get_level
         LOGGER.debug("start and end time: %s - %s" % (start, end))
         time_range = [start, end]
@@ -475,7 +477,7 @@ class AnalogsreanalyseProcess(Process):
 
         LOGGER.info('Dataset subset done: %s ', model_subset)
 
-        response.update_status('dataset subsetted', 19)
+        response.update_status('dataset subsetted', 15)
 
         # BLOCK OF DETRENDING of model_subset !
         # Original model subset kept to further visualisaion if needed
@@ -492,57 +494,6 @@ class AnalogsreanalyseProcess(Process):
 
         # ======================================
 
-        ############################################################
-        #  get the required bbox and time region from resource data
-        ############################################################
-        #
-        #
-        # try:
-        #     if dataset == 'NCEP':
-        #         if 'z' in var:
-        #             variable = 'hgt'
-        #             level = var.strip('z')
-        #             # conform_units_to=None
-        #         else:
-        #             variable = 'slp'
-        #             level = None
-        #             # conform_units_to='hPa'
-        #     elif '20CRV2' in var:
-        #         if 'z' in level:
-        #             variable = 'hgt'
-        #             level = var.strip('z')
-        #             # conform_units_to=None
-        #         else:
-        #             variable = 'prmsl'
-        #             level = None
-        #             # conform_units_to='hPa'
-        #     else:
-        #         LOGGER.exception('Reanalyses dataset not known')
-        #     LOGGER.info('environment set')
-        # except Exception as e:
-        #     msg = 'failed to set environment %s ' % e
-        #     LOGGER.exception(msg)
-        #     # raise Exception(msg)
-        #
-        # LOGGER.debug("init took %s seconds.", time.time() - start_time)
-        # response.update_status('Read in and convert the arguments done', 8)
-        #
-        # #################
-        # # get input data
-        # #################
-        # start_time = time.time()  # measure get_input_data ...
-        # response.update_status('fetching input data', 7)
-        # try:
-        #     input = reanalyses(start=start.year, end=end.year,
-        #                        variable=var, dataset=dataset)
-        #     LOGGER.info('input files %s' % input)
-        #     nc_subset = call(resource=input, variable=var,
-        #                      geom=bbox, spatial_wrapping='wrap')
-        # except Exception as e:
-        #     msg = 'failed to fetch or subset input files %s' % e
-        #     LOGGER.exception(msg)
-        #     # raise Exception(msg)
-
         LOGGER.debug("get_input_subset_dataset took %s seconds.",
                      time.time() - start_time)
         response.update_status('**** Input data fetched', 20)
@@ -550,7 +501,7 @@ class AnalogsreanalyseProcess(Process):
         ########################
         # input data preperation
         ########################
-        response.update_status('Start preparing input data', 22)
+        response.update_status('Start preparing input data', 30)
         start_time = time.time()  # measure data preperation ...
 
         try:
@@ -617,7 +568,7 @@ class AnalogsreanalyseProcess(Process):
             silent=False,
             period=[dt.strftime(refSt, '%Y-%m-%d'), dt.strftime(refEn, '%Y-%m-%d')],
             bbox="{0[0]},{0[2]},{0[1]},{0[3]}".format(bbox))
-        response.update_status('generated config file', 25)
+        response.update_status('generated config file', 40)
         #######################
         # CASTf90 call
         #######################
@@ -652,14 +603,14 @@ class AnalogsreanalyseProcess(Process):
         os.environ['LD_LIBRARY_PATH'] = hdflib
         # ################################################################################
 
-        response.update_status('Start CASTf90 call', 30)
+        response.update_status('Start CASTf90 call', 50)
         try:
             # response.update_status('execution of CASTf90', 50)
             cmd = ['analogue.out', config_file]
             LOGGER.debug("castf90 command: %s", cmd)
             output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
             LOGGER.info('analogue output:\n %s', output)
-            response.update_status('**** CASTf90 suceeded', 70)
+            response.update_status('**** CASTf90 suceeded', 60)
         except CalledProcessError as e:
             msg = 'CASTf90 failed:\n{0}'.format(e.output)
             LOGGER.exception(msg)
@@ -673,7 +624,7 @@ class AnalogsreanalyseProcess(Process):
             analogs_pdf = 'dummy_plot.pdf'
             with open(analogs_pdf, 'a'): os.utime(analogs_pdf, None)
 
-        response.update_status('preparing output', 75)
+        response.update_status('preparing output', 70)
 
         response.outputs['analog_pdf'].file = analogs_pdf 
         response.outputs['config'].file = config_file

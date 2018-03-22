@@ -162,13 +162,13 @@ class WeatherregimesmodelProcess(Process):
 
         LOGGER.info('Start process')
 
-        response.update_status('execution started at : %s ' % dt.now(), 5)
+        response.update_status('execution started at : %s ' % dt.now(), 10)
 
         ################################
         # reading in the input arguments
         ################################
         try:
-            response.update_status('execution started at : {}'.format(dt.now()), 5)
+            response.update_status('execution started at : {}'.format(dt.now()), 20)
 
             ################################
             # reading in the input arguments
@@ -184,19 +184,25 @@ class WeatherregimesmodelProcess(Process):
             else:
                 resource=[resource]
 
-            # resources = self.getInputValues(identifier='resources')
             season = request.inputs['season'][0].data
             LOGGER.info('season %s', season)
 
-            # if 'bbox' in request.inputs:
-            #    bbox = request.inputs['bbox'][0].data
-            #    bbox = [-80, 20, 50, 70]
-            # else:
-            #    bbox = [-80, 20, 50, 70]
+            bboxDef = '-80,50,20,70' # in general format
 
             bbox = []
             bboxStr = request.inputs['BBox'][0].data
+            LOGGER.debug('BBOX selected by user: %s ' % (bboxStr))
             bboxStr = bboxStr.split(',')
+
+            # Checking for wrong cordinates and apply default if nesessary
+            if (abs(float(bboxStr[0])) > 180 or
+                    abs(float(bboxStr[1]) > 180) or
+                    abs(float(bboxStr[2]) > 90) or
+                    abs(float(bboxStr[3])) > 90):
+                bboxStr = bboxDef # request.inputs['BBox'].default  # .default doesn't work anymore!!!
+                LOGGER.debug('BBOX is out of the range, using default instead: %s ' % (bboxStr))
+                bboxStr = bboxStr.split(',')
+
             bbox.append(float(bboxStr[0]))
             bbox.append(float(bboxStr[2]))
             bbox.append(float(bboxStr[1]))
@@ -234,7 +240,6 @@ class WeatherregimesmodelProcess(Process):
 
             # Check if 360_day calendar (all months are exactly 30 days):
             try:
-                if type(resource) is not list: resource=[resource]
                 modcal, calunits = get_calendar(resource[0])
                 if '360_day' in modcal:
                     if start.day == 31:
@@ -264,7 +269,7 @@ class WeatherregimesmodelProcess(Process):
         ############################################################
         # get the required bbox and time region from resource data
         ############################################################
-        response.update_status('start subsetting', 17)
+        response.update_status('start subsetting', 30)
 
         from blackswan.ocgis_module import call
         from blackswan.utils import get_variable, get_timerange
@@ -313,7 +318,7 @@ class WeatherregimesmodelProcess(Process):
 
             # XXXXXXX
 
-            # TODO: regrid needs here
+            # TODO: regrid needs here (???)
             # Check how to manage one big file with geopotential
             # TODO:
             # Adapt to work with levels for geopotential (check how its done for reanalysis process)
@@ -363,13 +368,13 @@ class WeatherregimesmodelProcess(Process):
         # )
 
         LOGGER.info('Dataset subset done: %s ' % model_subset)
-        response.update_status('dataset subsetted', 18)
+        response.update_status('dataset subsetted', 40)
 
         #####################
         # computing anomalies
         #####################
 
-        response.update_status('computing anomalies ', 19)
+        response.update_status('computing anomalies ', 50)
 
         model_anomal = wr.get_anomalies(model_subset, reference=reference, method=method, sseas=sseas)
 
@@ -377,12 +382,12 @@ class WeatherregimesmodelProcess(Process):
         # extracting season
         ####################
         model_season = wr.get_season(model_anomal, season=season)
-        response.update_status('values normalized', 20)
+        response.update_status('values normalized', 60)
 
         ####################
         # call the R scripts
         ####################
-        response.update_status('Start weather regime clustering ', 50)
+        response.update_status('Start weather regime clustering ', 70)
         import shlex
         import subprocess
         from blackswan import config
@@ -419,7 +424,7 @@ class WeatherregimesmodelProcess(Process):
             LOGGER.info('R outlog info:\n %s ' % output)
             LOGGER.debug('R outlog errors:\n %s ' % error)
             if len(output) > 0:
-                response.update_status('**** weatherregime in R suceeded', 90)
+                response.update_status('**** weatherregime in R suceeded', 80)
             else:
                 LOGGER.error('NO! output returned from R call')
         except Exception as e:
@@ -427,12 +432,11 @@ class WeatherregimesmodelProcess(Process):
             LOGGER.error(msg)
             raise Exception(msg)
 
-        response.update_status('Weather regime clustering done ', 92)
+        response.update_status('Weather regime clustering done ', 90)
         ############################################
         # set the outputs
         ############################################
-        response.update_status('Set the process outputs ', 95)
-        #bla=bla
+        # response.update_status('Set the process outputs ', 95)
         response.outputs['Routput_graphic'].file = output_graphics
         response.outputs['output_pca'].file = file_pca
         response.outputs['output_classification'].file = file_class

@@ -15,7 +15,7 @@ from blackswan.datafetch import reanalyses
 from blackswan.utils import get_variable, rename_variable
 from blackswan.utils import rename_complexinputs
 from blackswan.utils import archive, archiveextract
-from blackswan.utils import get_timerange
+from blackswan.utils import get_timerange, get_calendar
 from blackswan.log import init_process_logger
 from blackswan.datafetch import _PRESSUREDATA_
 
@@ -254,31 +254,66 @@ class AnalogscompareProcess(Process):
 
         resource = archiveextract(resource=rename_complexinputs(request.inputs['resource']))
 
+        # Filter resource:
+        if type(resource) == list:
+            resource = sorted(resource, key=lambda i: path.splitext(path.basename(i))[0])
+        else:
+            resource = [resource]
+
         refSt = request.inputs['refSt'][0].data
         refEn = request.inputs['refEn'][0].data
         dateSt = request.inputs['dateSt'][0].data
         dateEn = request.inputs['dateEn'][0].data
-        regrset = request.inputs['regrset'][0].data
 
-        # fix 31 December issue
-        # refSt = dt.combine(refSt,dt_time(12,0))
-        # refEn = dt.combine(refEn,dt_time(12,0))
-        # dateSt = dt.combine(dateSt,dt_time(12,0))
-        # dateEn = dt.combine(dateEn,dt_time(12,0))
+        regrset = request.inputs['regrset'][0].data
+        direction = request.inputs['direction'][0].data
+        # Check if model has 360_day calendar:
+
+        try:
+            modcal, calunits = get_calendar(resource[0])
+            LOGGER.debug('CALENDAR: %s' % (modcal))
+            if '360_day' in modcal:
+                if direction == 're2mo':
+                    if refSt.day == 31:
+                        refSt = refSt.replace(day=30)
+                        LOGGER.debug('Date has been changed for: %s' % (refSt))
+                    if refEn.day == 31:
+                        refEn = refEn.replace(day=30)
+                        LOGGER.debug('Date has been changed for: %s' % (refEn))
+                else: # mo2re
+                    if dateSt.day == 31:
+                        dateSt = dateSt.replace(day=30)
+                        LOGGER.debug('Date has been changed for: %s' % (dateSt))
+                    if dateEn.day == 31:
+                        dateEn = dateEn.replace(day=30)
+                        LOGGER.debug('Date has been changed for: %s' % (dateEn))
+        except:
+            LOGGER.debug('Could not detect calendar')
 
         seasonwin = request.inputs['seasonwin'][0].data
         nanalog = request.inputs['nanalog'][0].data
-        # bbox = [-80, 20, 50, 70]
-        # TODO: Add checking for wrong cordinates and apply default if nesessary
+
+        bboxDef = '-20,40,30,70' # in general format
+
         bbox = []
         bboxStr = request.inputs['BBox'][0].data
+        LOGGER.debug('BBOX selected by user: %s ' % (bboxStr))
         bboxStr = bboxStr.split(',')
+
+        # Checking for wrong cordinates and apply default if nesessary
+        if (abs(float(bboxStr[0])) > 180 or
+                abs(float(bboxStr[1]) > 180) or
+                abs(float(bboxStr[2]) > 90) or
+                abs(float(bboxStr[3])) > 90):
+            bboxStr = bboxDef # request.inputs['BBox'].default  # .default doesn't work anymore!!!
+            LOGGER.debug('BBOX is out of the range, using default instead: %s ' % (bboxStr))
+            bboxStr = bboxStr.split(',')
+
         bbox.append(float(bboxStr[0]))
         bbox.append(float(bboxStr[2]))
         bbox.append(float(bboxStr[1]))
         bbox.append(float(bboxStr[3]))
 
-        direction = request.inputs['direction'][0].data
         normalize = request.inputs['normalize'][0].data
         plot = request.inputs['plot'][0].data
         distance = request.inputs['dist'][0].data
@@ -324,7 +359,8 @@ class AnalogscompareProcess(Process):
 
         try:
             if model == 'NCEP':
-                getlevel = True
+                #getlevel = True
+                getlevel = False
                 if 'z' in var:
                     level = var.strip('z')
                     variable = 'hgt'
@@ -352,7 +388,7 @@ class AnalogscompareProcess(Process):
             raise Exception(msg)
 
         # LOGGER.exception("init took %s seconds.", time.time() - start_time)
-        response.update_status('Read in the arguments', 6)
+        response.update_status('Read in the arguments', 10)
 
         #################
         # get input data
@@ -360,7 +396,7 @@ class AnalogscompareProcess(Process):
         # TODO: do not forget to select years
 
         start_time = time.time()  # measure get_input_data ...
-        response.update_status('fetching input data', 7)
+        response.update_status('fetching input data', 20)
         try:
             if direction == 're2mo':
                 nc_reanalyses = reanalyses(start=anaSt.year, end=anaEn.year,
@@ -380,9 +416,10 @@ class AnalogscompareProcess(Process):
             # TODO: benchmark the method bellow for NCEP z500 for 60 years, may be use the same (!)
             # TODO Now everything regrid to the reanalysis
 
-            if ('20CRV2' in model) and ('z' in var):
+            # if ('20CRV2' in model) and ('z' in var):
+            if ('z' in var):
                 tmp_total = []
-                origvar = get_variable(nc_reanalyses)
+                origvar = get_variable(nc_reanalyses[0])
 
                 for z in nc_reanalyses:
                     #tmp_n = 'tmp_%s' % (uuid.uuid1())
@@ -410,14 +447,12 @@ class AnalogscompareProcess(Process):
                 tbr='rm -f %s' % (inter_subset_tmp)
                 system(tbr)
             else:
+                # TODO: ADD HERE serial as well as in weatherrigimes!
                 nc_subset = call(resource=nc_reanalyses, variable=var,
                                  geom=bbox, spatial_wrapping='wrap', time_range=r_time_range,
-                                # conform_units_to=conform_units_to
                                  )
 
-            # nc_subset = call(resource=nc_reanalyses, variable=var, geom=bbox, spatial_wrapping='wrap') # XXXXXX wrap
-            # LOGGER.exception("get_input_subset_model took %s seconds.", time.time() - start_time)
-            response.update_status('**** Input reanalyses data fetched', 10)
+            response.update_status('**** Input reanalyses data fetched', 30)
         except:
             msg = 'failed to fetch or subset input files'
             LOGGER.exception(msg)
@@ -426,13 +461,7 @@ class AnalogscompareProcess(Process):
         ########################
         # input data preperation
         ########################
-        response.update_status('Start preparing input data', 12)
-
-        # Filter resource:
-        if type(resource) == list:
-            resource = sorted(resource, key=lambda i: path.splitext(path.basename(i))[0])
-        else:
-            resource=[resource]
+        response.update_status('Start preparing input data', 40)
 
         tmp_resource = []
 
@@ -523,67 +552,6 @@ class AnalogscompareProcess(Process):
             else:
                 mod_subset = model_subset
 
-#            if direction == 're2mo':
-#                try:
-#                    response.update_status('Preparing simulation data', 15)
-#                    reanalyses_subset = call(resource=nc_subset, time_range=[anaSt, anaEn])
-#                except:
-#                    msg = 'failed to prepare simulation period'
-#                    LOGGER.exception(msg)
-#                try:
-#                    response.update_status('Preparing target data', 17)
-#                    var_target = get_variable(resource)
-#                    # var_simulation = get_variable(simulation)
-
-#                    model_subset_tmp = call(resource=resource, variable=var_target,
-#                                            time_range=[refSt, refEn],
-#                                            t_calendar='standard',
-#                                            spatial_wrapping='wrap',
-#                                            regrid_destination=nc_reanalyses[0],
-#                                            regrid_options='bil')
-
-#                    # model_subset = call(resource=resource, variable=var_target,
-#                    #                     time_range=[refSt, refEn],
-#                    #                     geom=bbox,
-#                    #                     t_calendar='standard',
-#                    #                     # conform_units_to=conform_units_to,
-#                    #                     spatial_wrapping='wrap',
-#                    #                     regrid_destination=reanalyses_subset,
-#                    #                     regrid_options='bil') # XXXXXXXXXXXX ADD WRAP rem calendar
-
-#                    model_subset = call(resource=model_subset_tmp,variable=var_target, geom=bbox, spatial_wrapping='wrap', t_calendar='standard')
-
-#                   # ISSUE: the regrided model has white border with null! Check it.
-#                   # check t_calendar!
-#                except:
-#                    msg = 'failed subset archive model'
-#                    LOGGER.exception(msg)
-#                    raise Exception(msg)
-#            else:
-#                try:
-#                    response.update_status('Preparing target data', 15)
-#                    var_target = get_variable(resource)
-#                    # var_simulation = get_variable(simulation)
-#                    model_subset = call(resource=resource, variable=var_target,
-#                                        time_range=[refSt, refEn],
-#                                        geom=bbox,
-#                                        t_calendar='standard',
-#                                        # conform_units_to=conform_units_to,
-#                                        # spatial_wrapping='wrap',
-#                                        )
-#                except:
-#                    msg = 'failed subset archive model'
-#                    LOGGER.exception(msg)
-#                    raise Exception(msg)
-#                try:
-#                    response.update_status('Preparing simulation data', 17)
-#                    reanalyses_subset = call(resource=nc_subset,
-#                                             time_range=[anaSt, anaEn],
-#                                             regrid_destination=model_subset,
-#                                             regrid_options='bil')
-#                except:
-#                    msg = 'failed to prepare simulation period'
-#                    LOGGER.exception(msg)
         except:
             msg = 'failed to subset simulation or reference data'
             LOGGER.exception(msg)
@@ -640,13 +608,11 @@ class AnalogscompareProcess(Process):
         output_file = path.abspath(output)
         files = [path.abspath(archive), path.abspath(simulation), output_file]
 
-        # LOGGER.exception("data preperation took %s seconds.", time.time() - start_time)
-
         ############################
         # generating the config file
         ############################
 
-        response.update_status('writing config file', 18)
+        response.update_status('writing config file', 50)
         start_time = time.time()  # measure write config ...
 
         try:
@@ -675,8 +641,6 @@ class AnalogscompareProcess(Process):
             LOGGER.exception(msg)
             raise Exception(msg)
 
-        # LOGGER.exception("write_config took %s seconds.", time.time() - start_time)
-
         #######################
         # CASTf90 call
         #######################
@@ -685,7 +649,7 @@ class AnalogscompareProcess(Process):
 
         start_time = time.time()  # measure call castf90
 
-        response.update_status('Start CASTf90 call', 20)
+        response.update_status('Start CASTf90 call', 60)
 
         #-----------------------
         try:
@@ -717,7 +681,7 @@ class AnalogscompareProcess(Process):
         # ################################################################################
 
         try:
-            # response.update_status('execution of CASTf90', 50)
+            response.update_status('execution of CASTf90', 70)
             cmd = 'analogue.out %s' % path.relpath(config_file)
             # system(cmd)
             args = shlex.split(cmd)
@@ -728,7 +692,7 @@ class AnalogscompareProcess(Process):
                 ).communicate()
             LOGGER.info('analogue.out info:\n %s ' % output)
             LOGGER.exception('analogue.out errors:\n %s ' % error)
-            response.update_status('**** CASTf90 suceeded', 90)
+            response.update_status('**** CASTf90 suceeded', 80)
         except:
             msg = 'CASTf90 failed'
             LOGGER.exception(msg)
@@ -743,7 +707,7 @@ class AnalogscompareProcess(Process):
             analogs_pdf = 'dummy_plot.pdf'
             with open(analogs_pdf, 'a'): utime(analogs_pdf, None)
 
-        response.update_status('preparting output', 91)
+        response.update_status('preparting output', 90)
 
         # Stopper to keep twitcher results, for debug
         # dummy=dummy
@@ -762,14 +726,14 @@ class AnalogscompareProcess(Process):
         # response.outputs['formated_analogs'].storage = FileStorage()
         response.outputs['formated_analogs'].file = formated_analogs_file
         LOGGER.info('analogs reformated')
-        response.update_status('reformatted analog file', 95)
+        # response.update_status('reformatted analog file', 95)
         viewer_html = analogs.render_viewer(
             # configfile=response.outputs['config'].get_url(),
             configfile=config_file,
             # datafile=response.outputs['formated_analogs'].get_url())
             datafile=formated_analogs_file)
         response.outputs['output'].file = viewer_html
-        response.update_status('Successfully generated analogs viewer', 99)
+        response.update_status('Successfully generated analogs viewer', 95)
         LOGGER.info('rendered pages: %s ', viewer_html)
         response.update_status('execution ended', 100)
         LOGGER.debug("total execution took %s seconds.", time.time() - process_start_time)
