@@ -200,11 +200,22 @@ class WeatherregimesreanalyseProcess(Process):
         season = request.inputs['season'][0].data
         LOGGER.info('season %s', season)
 
-        #bbox = [-80, 20, 50, 70]
-        # TODO: Add checking for wrong cordinates and apply default if nesessary
+        bboxDef = '-80,50,20,70' # in general format
+
         bbox = []
         bboxStr = request.inputs['BBox'][0].data
+        LOGGER.debug('BBOX selected by user: %s ' % (bboxStr))
         bboxStr = bboxStr.split(',')
+
+        # Checking for wrong cordinates and apply default if nesessary
+        if (abs(float(bboxStr[0])) > 180 or
+                abs(float(bboxStr[1]) > 180) or
+                abs(float(bboxStr[2]) > 90) or
+                abs(float(bboxStr[3])) > 90):
+            bboxStr = bboxDef # request.inputs['BBox'].default  # .default doesn't work anymore!!!
+            LOGGER.debug('BBOX is out of the range, using default instead: %s ' % (bboxStr))
+            bboxStr = bboxStr.split(',')
+
         bbox.append(float(bboxStr[0]))
         bbox.append(float(bboxStr[2]))
         bbox.append(float(bboxStr[1]))
@@ -285,14 +296,12 @@ class WeatherregimesreanalyseProcess(Process):
             LOGGER.exception(msg)
             raise Exception(msg)
 
-        response.update_status('fetching data done', 15)
+        response.update_status('fetching data done', 20)
         ############################################################
         # get the required bbox and time region from resource data
         ############################################################
 
-        response.update_status('subsetting region of interest', 17)
-        # from flyingpigeon.weatherregimes import get_level
-        # from flyingpigeon.ocgis_module import call
+        response.update_status('subsetting region of interest', 30)
 
         time_range = [start, end]
 
@@ -382,11 +391,11 @@ class WeatherregimesreanalyseProcess(Process):
         # =============================================================================================
         LOGGER.info('Dataset subset done: %s ', model_subset)
 
-        response.update_status('dataset subsetted', 18)
+        response.update_status('dataset subsetted', 40)
         ##############################################
         # computing anomalies
         ##############################################
-        response.update_status('computing anomalies ', 19)
+        response.update_status('computing anomalies ', 50)
 
         cycst = anualcycle.split('-')[0]
         cycen = anualcycle.split('-')[1]
@@ -398,14 +407,14 @@ class WeatherregimesreanalyseProcess(Process):
         #####################
         # extracting season
         #####################
-        response.update_status('normalizing data', 21)
+        response.update_status('normalizing data', 60)
         model_season = wr.get_season(model_anomal, season=season)
 
-        response.update_status('anomalies computed and  normalized', 24)
+        response.update_status('anomalies computed and  normalized', 70)
         #######################
         # call the R scripts
         #######################
-        response.update_status('Start weather regime clustering ', 25)
+        response.update_status('Start weather regime clustering ', 80)
         import shlex
         import subprocess
         from blackswan import config
@@ -449,11 +458,11 @@ class WeatherregimesreanalyseProcess(Process):
             LOGGER.exception(msg)
             raise Exception(msg)
 
-        response.update_status('Weather regime clustering done ', 93)
+        response.update_status('Weather regime clustering done ', 95)
         ############################################
         # set the outputs
         ############################################
-        response.update_status('Set the process outputs ', 95)
+        # response.update_status('Set the process outputs ', 96)
 
         response.outputs['Routput_graphic'].file = output_graphics
         response.outputs['output_pca'].file = file_pca
