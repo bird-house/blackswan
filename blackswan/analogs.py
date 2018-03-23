@@ -431,6 +431,7 @@ def plot_analogs(configfile='config.txt', simday='all', **kwargs):
             arc_times = get_time(arcfile)
             sim_times = get_time(simfile)
         except:
+            LOGGER.debug('PLOT_ANALOGS: Not standard calendar')
             arc_times = get_time_nc(arcfile)
             sim_times = get_time_nc(simfile)
 

@@ -493,21 +493,22 @@ class AnalogsmodelProcess(Process):
 #            archive_tmp = call(resource=regr_res, time_range=[refSt, refEn], spatial_wrapping='wrap')
 #            simulation_tmp = call(resource=regr_res, time_range=[dateSt, dateEn], spatial_wrapping='wrap')
 
-            archive = call(resource=res_tmp, time_range=[refSt, refEn], spatial_wrapping='wrap')
-            simulation = call(resource=res_tmp, time_range=[dateSt, dateEn], spatial_wrapping='wrap')
+            ################################
+            # Prepare names for config.txt #
+            ################################
+
+            refDatesString = dt.strftime(refSt, '%Y-%m-%d') + "_" + dt.strftime(refEn, '%Y-%m-%d')
+            simDatesString = dt.strftime(dateSt, '%Y-%m-%d') + "_" + dt.strftime(dateEn, '%Y-%m-%d')
+
+            archiveNameString = "base_" + var + "_" + refDatesString + '_%.1f_%.1f_%.1f_%.1f' \
+                                % (bbox[0], bbox[2], bbox[1], bbox[3])
+            simNameString = "sim_" + var + "_" + simDatesString + '_%.1f_%.1f_%.1f_%.1f' \
+                            % (bbox[0], bbox[2], bbox[1], bbox[3])
+
+            archive = call(resource=res_tmp, time_range=[refSt, refEn], spatial_wrapping='wrap', prefix=archiveNameString)
+            simulation = call(resource=res_tmp, time_range=[dateSt, dateEn], spatial_wrapping='wrap', prefix=simNameString)
 
             #######################################################################################
-            # TEMORAL dirty workaround to get the level and it's units - will be func in utils.py
-            # if (dimlen>3) :
-            #     archive = get_level(archive_tmp, level = level)
-            #     simulation = get_level(simulation_tmp,level = level)
-            #     variable = 'z%s' % level
-            #     # TODO: here should be modulated
-            # else:
-            #     archive = archive_tmp
-            #     simulation = simulation_tmp
-            #     # 3D, move forward
-            ########################################################################################
 
             if seacyc is True:
                 seasoncyc_base, seasoncyc_sim = analogs.seacyc(archive, simulation, method=normalize)
