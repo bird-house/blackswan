@@ -8,6 +8,7 @@ from tempfile import mkstemp
 import uuid
 from netCDF4 import Dataset
 from numpy import squeeze
+from shutil import move
 
 from blackswan import analogs
 from blackswan.ocgis_module import call
@@ -606,6 +607,25 @@ class AnalogscompareProcess(Process):
 
         ip, output = mkstemp(dir='.', suffix='.txt')
         output_file = path.abspath(output)
+
+        ################################
+        # Prepare names for config.txt #
+        ################################
+
+        refDatesString = dt.strftime(refSt, '%Y-%m-%d') + "_" + dt.strftime(refEn, '%Y-%m-%d')
+        simDatesString = dt.strftime(dateSt, '%Y-%m-%d') + "_" + dt.strftime(dateEn, '%Y-%m-%d')
+
+        archiveNameString = "base_" + out_var + "_" + refDatesString + '_%.1f_%.1f_%.1f_%.1f' \
+                            % (bbox[0], bbox[2], bbox[1], bbox[3]) +'.nc'
+        simNameString = "sim_" + out_var + "_" + simDatesString + '_%.1f_%.1f_%.1f_%.1f' \
+                        % (bbox[0], bbox[2], bbox[1], bbox[3]) + '.nc'
+
+        move(archive, archiveNameString)
+        move(simulation, simNameString)
+
+        archive = archiveNameString
+        simulation = simNameString
+
         files = [path.abspath(archive), path.abspath(simulation), output_file]
 
         ############################

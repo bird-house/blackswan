@@ -142,7 +142,7 @@ class AnalogsreanalyseCTA(Process):
                          data_type='string',
                          min_occurs=0,
                          max_occurs=1,
-                         allowed_values=['euclidean', 'mahalanobis', 'cosine', 'of']
+                         allowed_values=['euclidean', 'mahalanobis', 'cosine']
                          ),
 
             LiteralInput("outformat", "output file format",
@@ -489,57 +489,6 @@ class AnalogsreanalyseCTA(Process):
 
         # ======================================
 
-        ############################################################
-        #  get the required bbox and time region from resource data
-        ############################################################
-        #
-        #
-        # try:
-        #     if dataset == 'NCEP':
-        #         if 'z' in var:
-        #             variable = 'hgt'
-        #             level = var.strip('z')
-        #             # conform_units_to=None
-        #         else:
-        #             variable = 'slp'
-        #             level = None
-        #             # conform_units_to='hPa'
-        #     elif '20CRV2' in var:
-        #         if 'z' in level:
-        #             variable = 'hgt'
-        #             level = var.strip('z')
-        #             # conform_units_to=None
-        #         else:
-        #             variable = 'prmsl'
-        #             level = None
-        #             # conform_units_to='hPa'
-        #     else:
-        #         LOGGER.exception('Reanalyses dataset not known')
-        #     LOGGER.info('environment set')
-        # except Exception as e:
-        #     msg = 'failed to set environment %s ' % e
-        #     LOGGER.exception(msg)
-        #     # raise Exception(msg)
-        #
-        # LOGGER.debug("init took %s seconds.", time.time() - start_time)
-        # response.update_status('Read in and convert the arguments done', 8)
-        #
-        # #################
-        # # get input data
-        # #################
-        # start_time = time.time()  # measure get_input_data ...
-        # response.update_status('fetching input data', 7)
-        # try:
-        #     input = reanalyses(start=start.year, end=end.year,
-        #                        variable=var, dataset=dataset)
-        #     LOGGER.info('input files %s' % input)
-        #     nc_subset = call(resource=input, variable=var,
-        #                      geom=bbox, spatial_wrapping='wrap')
-        # except Exception as e:
-        #     msg = 'failed to fetch or subset input files %s' % e
-        #     LOGGER.exception(msg)
-        #     # raise Exception(msg)
-
         LOGGER.debug("get_input_subset_dataset took %s seconds.",
                      time.time() - start_time)
         response.update_status('**** Input data fetched', 20)
@@ -663,15 +612,6 @@ class AnalogsreanalyseCTA(Process):
             raise Exception(msg)
         LOGGER.debug("castf90 took %s seconds.", time.time() - start_time)
 
-        # TODO: Add try - except for pdfs
-        # if plot == 'Yes':
-        #    analogs_pdf = analogs.plot_analogs(configfile=config_file)   
-        # else:
-        #    analogs_pdf = 'dummy_plot.pdf'
-        #    with open(analogs_pdf, 'a'): os.utime(analogs_pdf, None)
-
-
-
         # --------------- R cont analogs calcs -----------------------------------
 
         #######################
@@ -691,13 +631,6 @@ class AnalogsreanalyseCTA(Process):
             Rdatfile = 'analogs_RT.Rdat'
             probs_c=0.7
             probs_n=0.3
-            # infile = model_season  # model_subset #model_ponderate
-            # modelname = model
-            # yr1 = start.year
-            # yr2 = end.year
-            # ip, output_graphics = mkstemp(dir=curdir, suffix='.pdf')
-            # ip, file_pca = mkstemp(dir=curdir, suffix='.txt')
-            # ip, file_class = mkstemp(dir=curdir, suffix='.Rdat')
 
             args = ['Rscript', join(Rsrc, Rfile),
                     '%s' % output_file, '%s' % probs_c,
