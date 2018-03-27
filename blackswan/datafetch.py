@@ -155,7 +155,7 @@ def reanalyses(start=1948, end=None, variable='slp', dataset='NCEP', timres='day
                     cur_filename = path.join(config.cache_path(), parsed_url.netloc, parsed_url.path.strip('/'))
                     if path.exists(cur_filename):
                         fn_time = dt.fromtimestamp(path.getmtime(cur_filename))
-                        LOGGER.debug('Rean data for %s year creation time: ' % fn_time)
+                        LOGGER.debug('Rean data for %s year creation time: %s' % (year, fn_time))
                         if (fn_time.year == cur_year) and (fn_time.month == cur_month) and (fn_time.day == cur_day):
                             LOGGER.debug('Rean data for %s year is up-to-date' % year)
                         else:

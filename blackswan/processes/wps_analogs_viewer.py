@@ -35,9 +35,10 @@ class AnalogsviewerProcess(Process):
                           as_reference=True,
                           ),
 
-            LiteralOutput("output_txt", "modified analogues txt file",
-                          abstract="txt file for analogue viewer",
-                          data_type='string',
+            ComplexOutput("output_txt", "modified analogues txt file",
+                          abstract="Formated analogues file for viewer",
+                          supported_formats=[Format("text/plain")],
+                          as_reference=True,
                           ),
 
             ComplexOutput('output_log', 'Logging information',
@@ -92,9 +93,9 @@ class AnalogsviewerProcess(Process):
             raise Exception(msg)
 
         try:
-            output_av = anlg.get_viewer(
-                configfile=basename(configfile),
-                datafile=basename(analogs_mod))
+            output_av = anlg.render_viewer(
+                configfile=configfile,
+                datafile=analogs_mod)
             LOGGER.info('Viewer html page generated')
             response.update_status('Successfully generated analogs viewer html page', 90)
             response.outputs['output_html'].file = output_av
