@@ -42,16 +42,11 @@ class AnalogsreanalyseCTA(Process):
                          data_type='string',
                          min_occurs=1,
                          max_occurs=1,
-                         allowed_values=_PRESSUREDATA_
-                         ),
-
-            LiteralInput("timeres", "Reanalyses temporal resolution",
-                         abstract="Temporal resolution of the reanalyses (only for 20CRV2)",
-                         default="day",
-                         data_type='string',
-                         min_occurs=0,
-                         max_occurs=1,
-                         allowed_values=['day', '6h']
+                         allowed_values=['NCEP_slp', 'NCEP_z1000', 'NCEP_z850',
+                                         'NCEP_z700', 'NCEP_z600', 'NCEP_z500', 'NCEP_z400',
+                                         'NCEP_z300', 'NCEP_z250', 'NCEP_z200', 'NCEP_z150',
+                                         'NCEP_z100', 'NCEP_z70', 'NCEP_z50', 'NCEP_z30',
+                                         'NCEP_z20', 'NCEP_z10']
                          ),
 
             LiteralInput('BBox', 'Bounding Box',
@@ -269,13 +264,22 @@ class AnalogsreanalyseCTA(Process):
 
             seasonwin = request.inputs['seasonwin'][0].data
             nanalog = request.inputs['nanalog'][0].data
-            timres = request.inputs['timeres'][0].data
 
-            #bbox = [-80, 20, 50, 70]
-            # TODO: Add checking for wrong cordinates and apply default if nesessary
+            bboxDef = '-80,50,20,70' # in general format
             bbox = []
             bboxStr = request.inputs['BBox'][0].data
+            LOGGER.debug('BBOX selected by user: %s ' % (bboxStr))
             bboxStr = bboxStr.split(',')
+
+            # Checking for wrong cordinates and apply default if nesessary
+            if (abs(float(bboxStr[0])) > 180 or
+                    abs(float(bboxStr[1]) > 180) or
+                    abs(float(bboxStr[2]) > 90) or
+                    abs(float(bboxStr[3])) > 90):
+                bboxStr = bboxDef # request.inputs['BBox'].default  # .default doesn't work anymore!!!
+                LOGGER.debug('BBOX is out of the range, using default instead: %s ' % (bboxStr))
+                bboxStr = bboxStr.split(',')
+
             bbox.append(float(bboxStr[0]))
             bbox.append(float(bboxStr[2]))
             bbox.append(float(bboxStr[1]))
@@ -285,7 +289,6 @@ class AnalogsreanalyseCTA(Process):
 
             normalize = request.inputs['normalize'][0].data
             detrend = request.inputs['detrend'][0].data
-            # plot = request.inputs['plot'][0].data
             distance = request.inputs['dist'][0].data
             outformat = request.inputs['outformat'][0].data
             timewin = request.inputs['timewin'][0].data
@@ -293,9 +296,6 @@ class AnalogsreanalyseCTA(Process):
             model_var = request.inputs['reanalyses'][0].data
             model, var = model_var.split('_')
 
-            # experiment = self.getInputValues(identifier='experiment')[0]
-            # dataset, var = experiment.split('_')
-            # LOGGER.info('environment set')
             LOGGER.info('input parameters set')
             response.update_status('Read in and convert the arguments', 8)
         except Exception as e:
@@ -312,12 +312,6 @@ class AnalogsreanalyseCTA(Process):
 
             start = min(refSt, dateSt)
             end = max(refEn, dateEn)
-
-            #
-            # refSt = dt.strftime(refSt, '%Y-%m-%d')
-            # refEn = dt.strftime(refEn, '%Y-%m-%d')
-            # dateSt = dt.strftime(dateSt, '%Y-%m-%d')
-            # dateEn = dt.strftime(dateEn, '%Y-%m-%d')
 
             if normalize == 'None':
                 seacyc = False
@@ -342,42 +336,22 @@ class AnalogsreanalyseCTA(Process):
 
         response.update_status('fetching data from archive', 10)
 
-        try:
-            if model == 'NCEP':
-                getlevel = False
-                if 'z' in var:
-                    level = var.strip('z')
-                    conform_units_to = None
-                else:
-                    level = None
-                    if var == 'precip': var = 'pr_wtr'
-                    conform_units_to = 'hPa'
-            elif '20CRV2' in model:
-                getlevel = False
-                if 'z' in var:
-                    level = var.strip('z')
-                    conform_units_to = None
-                else:
-                    level = None
-                    conform_units_to = 'hPa'
-            else:
-                LOGGER.exception('Reanalyses dataset not known')
-            LOGGER.info('environment set for model: %s' % model)
-        except Exception:
-            msg = 'failed to set environment'
-            LOGGER.exception(msg)
-            raise Exception(msg)
+        # We work only with NCEP
+        getlevel = False
+        if 'z' in var:
+            level = var.strip('z')
+        else:
+            level = None
 
         ##########################################
         # fetch Data from original data archive
         ##########################################
                 
-        # NOTE: If ref is say 1950 - 1990, and sim is just 1 week in 2017 - ALL the data will be downloaded, 1950 - 2017 
         try:
             model_nc = rl(start=start.year,
                           end=end.year,
                           dataset=model,
-                          variable=var, timres=timres, getlevel=getlevel)
+                          variable=var, getlevel=getlevel)
             LOGGER.info('reanalyses data fetched')
         except Exception:
             msg = 'failed to get reanalyses data'
@@ -385,23 +359,24 @@ class AnalogsreanalyseCTA(Process):
             raise Exception(msg)
 
         response.update_status('subsetting region of interest', 17)
-        # from flyingpigeon.weatherregimes import get_level
+
         LOGGER.debug("start and end time: %s - %s" % (start, end))
         time_range = [start, end]
 
         # Checking memory and dataset size
-        model_size = get_files_size(model_nc)
+        m_size = get_files_size(model_nc)
         memory_avail = psutil.virtual_memory().available
-        thrs = 0.3 # 50%
-        if (model_size >= thrs * memory_avail):
+        thrs = 0.2 # 20%
+
+        if (m_size >= thrs * memory_avail):
             ser_r = True
         else:
             ser_r = False
 
-        # For 20CRV2 geopotential height, daily dataset for 100 years is about 50 Gb
-        # So it makes sense, to operate it step-by-step
-        # TODO: need to create dictionary for such datasets (for models as well)
-        # TODO: benchmark the method bellow for NCEP z500 for 60 years
+        LOGGER.debug('Available Memory: %s ' % (memory_avail))
+        LOGGER.debug('Dataset size: %s ' % (m_size))
+        LOGGER.debug('Threshold: %s ' % (thrs*memory_avail))
+        LOGGER.debug('Serial or at once: %s ' % (ser_r))
 
 #        if ('20CRV2' in model) and ('z' in var):
         if ('z' in var):  
@@ -419,8 +394,8 @@ class AnalogsreanalyseCTA(Process):
 
             # Clean
             for i in tmp_total:
-                tbr='rm -f %s' % (i) 
-                os.system(tbr)  
+                tbr='rm -f %s' % (i)
+                os.system(tbr)
 
             # Create new variable
             ds = Dataset(inter_subset_tmp, mode='a')
@@ -442,33 +417,18 @@ class AnalogsreanalyseCTA(Process):
                     tmp_total.append(b0)
                 tmp_total = sorted(tmp_total, key=lambda i: os.path.splitext(os.path.basename(i))[0])
                 model_subset_tmp = call(resource=tmp_total, variable=var, time_range=time_range)
+
+                # Clean
+                for i in tmp_total:
+                    tbr='rm -f %s' % (i)
+                    os.system(tbr)
             else:
                 LOGGER.debug('Using whole dataset at once')
                 model_subset_tmp = call(resource=model_nc, variable=var,
                                         geom=bbox, spatial_wrapping='wrap', time_range=time_range,
                                         )
-
-        # If dataset is 20CRV2 the 6 hourly file should be converted to daily.  
-        # Option to use previously 6h data from cache (if any) and not download daily files.
-
-        if '20CRV2' in model:
-            if timres == '6h':
-                from cdo import Cdo
-                
-                cdo = Cdo(env=os.environ)
-                model_subset = '%s.nc' % uuid.uuid1()
-                tmp_f = '%s.nc' % uuid.uuid1()
-
-                cdo_op = getattr(cdo,'daymean')
-                cdo_op(input=model_subset_tmp, output=tmp_f)
-                sti = '00:00:00' 
-                cdo_op = getattr(cdo,'settime')
-                cdo_op(sti, input=tmp_f, output=model_subset)
-                LOGGER.debug('File Converted from: %s to daily' % (timres))
-            else:
-                model_subset = model_subset_tmp
-        else:
-            model_subset = model_subset_tmp
+        # Rest from 20CRV...
+        model_subset = model_subset_tmp
 
         LOGGER.info('Dataset subset done: %s ', model_subset)
 
