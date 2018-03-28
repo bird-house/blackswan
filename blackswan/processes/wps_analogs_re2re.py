@@ -351,6 +351,11 @@ class AnalogsRe2ReProcess(Process):
         else:
             ser_r = False
 
+        LOGGER.debug('Available Memory: %s ' % (memory_avail))
+        LOGGER.debug('Dataset size: %s ' % (m_size))
+        LOGGER.debug('Threshold: %s ' % (thrs*memory_avail))
+        LOGGER.debug('Serial or at once: %s ' % (ser_r))
+
         # #####################################################
         # Construct descriptive filenames for the three files #
         # listed in config file                               #
