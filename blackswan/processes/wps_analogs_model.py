@@ -468,8 +468,10 @@ class AnalogsmodelProcess(Process):
             for res_fn in lev_res:
                 tmp_f = 'dom_' + path.basename(res_fn)
                 comcdo = '%s,%s,%s,%s' % (bbox[0],bbox[2],bbox[1],bbox[3])
-                # cdo.sellonlatbox(comcdo, input=res_fn, output=tmp_f)
-                tmp_f = call(resource=res_fn, geom=bbox, spatial_wrapping='wrap', prefix=tmp_f)
+                try:
+                    tmp_f = call(resource=res_fn, geom=bbox, spatial_wrapping='wrap', prefix=tmp_f[0:-3])
+                except:
+                    cdo.sellonlatbox(comcdo, input=res_fn, output=tmp_f)
                 regr_res.append(tmp_f)
 
             # ============================  
@@ -500,9 +502,9 @@ class AnalogsmodelProcess(Process):
             refDatesString = dt.strftime(refSt, '%Y-%m-%d') + "_" + dt.strftime(refEn, '%Y-%m-%d')
             simDatesString = dt.strftime(dateSt, '%Y-%m-%d') + "_" + dt.strftime(dateEn, '%Y-%m-%d')
 
-            archiveNameString = "base_" + var + "_" + refDatesString + '_%.1f_%.1f_%.1f_%.1f' \
+            archiveNameString = "base_" + variable + "_" + refDatesString + '_%.1f_%.1f_%.1f_%.1f' \
                                 % (bbox[0], bbox[2], bbox[1], bbox[3])
-            simNameString = "sim_" + var + "_" + simDatesString + '_%.1f_%.1f_%.1f_%.1f' \
+            simNameString = "sim_" + variable + "_" + simDatesString + '_%.1f_%.1f_%.1f_%.1f' \
                             % (bbox[0], bbox[2], bbox[1], bbox[3])
 
             archive = call(resource=res_tmp, time_range=[refSt, refEn], spatial_wrapping='wrap', prefix=archiveNameString)
