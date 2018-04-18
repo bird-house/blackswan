@@ -9,6 +9,7 @@ from .wps_analogs_viewer import AnalogsviewerProcess
 from .wps_analogs_cta import AnalogsreanalyseCTA
 from .wps_simple_plot import SimplePlot
 from .wps_pythonanattribution import PythonanattributionProcess
+from .wps_regrsub import Inter_Sub
 processes = [
     WeatherregimesreanalyseProcess(),
 #    WeatherregimesprojectionProcess(),
@@ -21,4 +22,5 @@ processes = [
     AnalogsreanalyseCTA(),
     SimplePlot(),
     PythonanattributionProcess(),
+    Inter_Sub(),
 ]
