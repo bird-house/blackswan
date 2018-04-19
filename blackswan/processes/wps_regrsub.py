@@ -8,7 +8,7 @@ from pywps import ComplexInput, ComplexOutput
 from pywps import Format, FORMATS
 from pywps.app.Common import Metadata
 
-from os import environ, path
+from os import environ, path, chmod
 
 from cdo import Cdo
 cdo_version = Cdo().version()
@@ -105,6 +105,7 @@ class Inter_Sub(Process):
             tar.add(outfile, arcname=new_arc_name)
 
         tar.close()
+        chmod(tarf, 0644)
         response.outputs['output'].file = outfile
         response.outputs['tarout'].file = tarf
         response.update_status("cdo remapping and subsetting done", 100)
