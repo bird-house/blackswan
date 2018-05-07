@@ -22,12 +22,13 @@ __pycache__
 
 # Unit test / Coverage reports
 .cache
+.pytest_cache
 .coverage
 .tox
 nosetests.xml
 unit_tests/testdata.json
 
-# R 
+# R
 *.Rhistory
 
 # Eclipse / PyDev
