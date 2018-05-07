@@ -499,8 +499,12 @@ class AnalogsmodelProcess(Process):
             # Prepare names for config.txt #
             ################################
 
-            refDatesString = dt.strftime(refSt, '%Y-%m-%d') + "_" + dt.strftime(refEn, '%Y-%m-%d')
-            simDatesString = dt.strftime(dateSt, '%Y-%m-%d') + "_" + dt.strftime(dateEn, '%Y-%m-%d')
+            # refDatesString = dt.strftime(refSt, '%Y-%m-%d') + "_" + dt.strftime(refEn, '%Y-%m-%d')
+            # simDatesString = dt.strftime(dateSt, '%Y-%m-%d') + "_" + dt.strftime(dateEn, '%Y-%m-%d')
+
+            # Fix < 1900 issue...
+            refDatesString = refSt.isoformat().strip().split("T")[0] + "_" + refEn.isoformat().strip().split("T")[0]
+            simDatesString = dateSt.isoformat().strip().split("T")[0] + "_" + dateEn.isoformat().strip().split("T")[0]
 
             archiveNameString = "base_" + variable + "_" + refDatesString + '_%.1f_%.1f_%.1f_%.1f' \
                                 % (bbox[0], bbox[2], bbox[1], bbox[3])
@@ -553,7 +557,8 @@ class AnalogsmodelProcess(Process):
                 outformat=outformat,
                 calccor=True,
                 silent=False,
-                period=[dt.strftime(refSt, '%Y-%m-%d'), dt.strftime(refEn, '%Y-%m-%d')],
+                # period=[dt.strftime(refSt, '%Y-%m-%d'), dt.strftime(refEn, '%Y-%m-%d')],
+                period=[refSt.isoformat().strip().split("T")[0], refEn.isoformat().strip().split("T")[0]],
                 bbox="%s,%s,%s,%s" % (bbox[0], bbox[2], bbox[1], bbox[3]))
         except Exception as e:
             msg = 'failed to generate config file %s ' % e
