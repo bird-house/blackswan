@@ -18,6 +18,7 @@ from blackswan import config
 import logging
 LOGGER = logging.getLogger("PYWPS")
 
+
 class Inter_Sub(Process):
 
     def __init__(self):
@@ -78,23 +79,23 @@ class Inter_Sub(Process):
         if type(nc_files) == list:
             nc_files = sorted(nc_files, key=lambda i: path.splitext(path.basename(i))[0])
         else:
-            nc_files=[nc_files]
+            nc_files = [nc_files]
 
         (fp_tarf, tarf) = tempfile.mkstemp(dir=".", suffix='.tar')
         tar = tarfile.open(tarf, "w")
-      
+
         cdo = Cdo(env=environ)
-        #operator='remapbil'
+        # operator='remapbil'
         operator = request.inputs['operator'][0].data
 
-        gri=path.join(config.masks_path(),'EUR_1x1.nc')
+        gri = path.join(config.masks_path(), 'EUR_1x1.nc')
 
         cdo_op = getattr(cdo, operator)
 
         for nc_file in nc_files:
             LOGGER.debug('Input NetCDF file = %s' % (nc_file))
 
-            #(fp_ncf, outfile) = tempfile.mkstemp(dir=".", suffix='.nc')
+            # (fp_ncf, outfile) = tempfile.mkstemp(dir=".", suffix='.nc')
 
             new_arc_name = path.basename(nc_file.split(".nc")[0] + "_" + operator + "_EU1x1" + ".nc")
             outfile = new_arc_name

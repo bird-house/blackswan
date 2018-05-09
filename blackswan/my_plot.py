@@ -12,7 +12,8 @@ import pwd
 import os
 import uuid
 
-def simple_plot(resource, variable='air', lat='lat', lon ='lon', timestep=0, output=None):
+
+def simple_plot(resource, variable='air', lat='lat', lon='lon', timestep=0, output=None):
     """
     Generates a nice and simple plot.
     """
@@ -23,8 +24,6 @@ def simple_plot(resource, variable='air', lat='lat', lon ='lon', timestep=0, out
     pl_val = pl_data.variables[variable][timestep,:,:]
     pl_lat = pl_data.variables[lat][:]
     pl_lon = pl_data.variables[lon][:]
-
-
 
     fig = plt.figure()
     fig.set_size_inches(18.5, 10.5, forward=True)
@@ -38,11 +37,11 @@ def simple_plot(resource, variable='air', lat='lat', lon ='lon', timestep=0, out
 
     levels = np.linspace(vmin, vmax, 30)
 
-    cmap=get_cmap("RdBu_r")
+    cmap = get_cmap("RdBu_r")
 
     data_map = ax.contourf(pl_lon, pl_lat, pl_val, levels=levels, extend='both', cmap=cmap, projection=ccrs.PlateCarree())
     data_cbar = plt.colorbar(data_map, extend='both', shrink=0.6)
-    data_cont = ax.contour(pl_lon, pl_lat, pl_val, levels=levels, linewidths=0.5, colors="white", linestyles = 'dashed', projection=ccrs.PlateCarree())
+    data_cont = ax.contour(pl_lon, pl_lat, pl_val, levels=levels, linewidths=0.5, colors="white", linestyles='dashed', projection=ccrs.PlateCarree())
 
     plt.clabel(data_cont, inline=1, fmt='%1.0f')
     title = 'Simple plot for %s' % (variable)
@@ -58,4 +57,3 @@ def simple_plot(resource, variable='air', lat='lat', lon ='lon', timestep=0, out
 
     print("Plot written to {}".format(output))
     return output
-

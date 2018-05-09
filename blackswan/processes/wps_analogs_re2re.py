@@ -214,8 +214,6 @@ class AnalogsRe2ReProcess(Process):
             store_supported=True,
         )
 
-
-
     def _handler(self, request, response):
         init_process_logger('log.txt')
         response.outputs['output_log'].file = 'log.txt'
@@ -241,7 +239,7 @@ class AnalogsRe2ReProcess(Process):
             seasonwin = request.inputs['seasonwin'][0].data
             nanalog = request.inputs['nanalog'][0].data
 
-            bboxDef = '-20,40,30,70' # in general format
+            bboxDef = '-20,40,30,70'  # in general format
 
             bbox = []
             bboxStr = request.inputs['BBox'][0].data
@@ -253,7 +251,7 @@ class AnalogsRe2ReProcess(Process):
                     abs(float(bboxStr[1]) > 180) or
                     abs(float(bboxStr[2]) > 90) or
                     abs(float(bboxStr[3])) > 90):
-                bboxStr = bboxDef # request.inputs['BBox'].default  # .default doesn't work anymore!!!
+                bboxStr = bboxDef  # request.inputs['BBox'].default  # .default doesn't work anymore!!!
                 LOGGER.debug('BBOX is out of the range, using default instead: %s ' % (bboxStr))
                 bboxStr = bboxStr.split(',')
 
@@ -289,7 +287,7 @@ class AnalogsRe2ReProcess(Process):
             response.update_status('Preparing enviroment converting arguments', 8)
             LOGGER.debug('date: %s %s %s %s ' % (type(refSt), refEn, dateSt, dateSt))
 
-            #normalize == 'None':
+            # normalize == 'None':
             seacyc = False
 
             if outformat == 'ascii':
@@ -319,7 +317,7 @@ class AnalogsRe2ReProcess(Process):
         ##########################################
         # fetch Data from original data archive
         ##########################################
-                
+
         try:
             model_nc = rl(start=dateSt.year, end=dateEn.year,
                           dataset=model, variable=var,
@@ -344,7 +342,7 @@ class AnalogsRe2ReProcess(Process):
         m_size = max(model_size, ref_model_size)
 
         memory_avail = psutil.virtual_memory().available
-        thrs = 0.2 # 10%
+        thrs = 0.2  # 20%
 
         if (m_size >= thrs * memory_avail):
             ser_r = True
@@ -353,7 +351,7 @@ class AnalogsRe2ReProcess(Process):
 
         LOGGER.debug('Available Memory: %s ' % (memory_avail))
         LOGGER.debug('Dataset size: %s ' % (m_size))
-        LOGGER.debug('Threshold: %s ' % (thrs*memory_avail))
+        LOGGER.debug('Threshold: %s ' % (thrs * memory_avail))
         LOGGER.debug('Serial or at once: %s ' % (ser_r))
 
         # #####################################################
@@ -374,25 +372,25 @@ class AnalogsRe2ReProcess(Process):
         simNameString = "sim_" + var + "_" + simDatesString + '_%.1f_%.1f_%.1f_%.1f' \
                             % (bbox[0], bbox[2], bbox[1], bbox[3])
 
-        if ('z' in var):  
+        if ('z' in var):
             # ------------------ NCEP -------------------
             tmp_total = []
             origvar = get_variable(model_nc)
 
             for z in model_nc:
-                b0=call(resource=z, variable=origvar, level_range=[int(level), int(level)], geom=bbox,
-                spatial_wrapping='wrap', prefix='levdom_'+os.path.basename(z)[0:-3])
+                b0 = call(resource=z, variable=origvar, level_range=[int(level), int(level)], geom=bbox,
+                spatial_wrapping='wrap', prefix='levdom_' + os.path.basename(z)[0:-3])
                 tmp_total.append(b0)
 
-            time_range=[dateSt, dateEn]
+            time_range = [dateSt, dateEn]
 
             tmp_total = sorted(tmp_total, key=lambda i: os.path.splitext(os.path.basename(i))[0])
             inter_subset_tmp = call(resource=tmp_total, variable=origvar, time_range=time_range)
 
             # Clean
             for i in tmp_total:
-                tbr='rm -f %s' % (i) 
-                os.system(tbr)  
+                tbr = 'rm -f %s' % (i)
+                os.system(tbr)
 
             # Create new variable
             ds = Dataset(inter_subset_tmp, mode='a')
@@ -409,30 +407,30 @@ class AnalogsRe2ReProcess(Process):
 
             for z in ref_model_nc:
 
-                tmp_n='tmp_%s' % (uuid.uuid1())
+                tmp_n = 'tmp_%s' % (uuid.uuid1())
                 # select level and regrid
-                b0=call(resource=z, variable=origvar, level_range=[int(level), int(level)],
+                b0 = call(resource=z, variable=origvar, level_range=[int(level), int(level)],
                         spatial_wrapping='wrap', cdover='system',
                         regrid_destination=model_nc[0], regrid_options='bil', prefix=tmp_n)
 
                 # select domain
-                b01=call(resource=b0, variable=origvar, geom=bbox, spatial_wrapping='wrap', prefix='levregr_'+os.path.basename(z)[0:-3])
-                tbr='rm -f %s' % (b0)
+                b01 = call(resource=b0, variable=origvar, geom=bbox, spatial_wrapping='wrap', prefix='levregr_' + os.path.basename(z)[0:-3])
+                tbr = 'rm -f %s' % (b0)
                 os.system(tbr)
-                tbr='rm -f %s.nc' % (tmp_n)
+                tbr = 'rm -f %s.nc' % (tmp_n)
                 os.system(tbr)
 
                 tmp_total.append(b01)
 
-            time_range=[refSt, refEn]
+            time_range = [refSt, refEn]
 
             tmp_total = sorted(tmp_total, key=lambda i: os.path.splitext(os.path.basename(i))[0])
             ref_inter_subset_tmp = call(resource=tmp_total, variable=origvar, time_range=time_range)
 
             # Clean
             for i in tmp_total:
-                tbr='rm -f %s' % (i) 
-                os.system(tbr)  
+                tbr = 'rm -f %s' % (i)
+                os.system(tbr)
 
             # Create new variable
             ds = Dataset(ref_inter_subset_tmp, mode='a')
@@ -449,8 +447,8 @@ class AnalogsRe2ReProcess(Process):
                 # ----- NCEP ------
                 tmp_total = []
                 for z in model_nc:
-                    b0=call(resource=z, variable=var, geom=bbox, spatial_wrapping='wrap',
-                            prefix='Rdom_'+os.path.basename(z)[0:-3])
+                    b0 = call(resource=z, variable=var, geom=bbox, spatial_wrapping='wrap',
+                            prefix='Rdom_' + os.path.basename(z)[0:-3])
                     tmp_total.append(b0)
 
                 tmp_total = sorted(tmp_total, key=lambda i: os.path.splitext(os.path.basename(i))[0])
@@ -458,23 +456,23 @@ class AnalogsRe2ReProcess(Process):
 
                 # Clean
                 for i in tmp_total:
-                    tbr='rm -f %s' % (i) 
-                    os.system(tbr) 
+                    tbr = 'rm -f %s' % (i)
+                    os.system(tbr)
 
                 # ----- 20CRV2c ------
-                tmp_n='tmp_%s' % (uuid.uuid1())
+                tmp_n = 'tmp_%s' % (uuid.uuid1())
                 tmp_total = []
                 for z in ref_model_nc:
                     # regrid
-                    b0=call(resource=z, variable=ref_var, spatial_wrapping='wrap', cdover='system',
+                    b0 = call(resource=z, variable=ref_var, spatial_wrapping='wrap', cdover='system',
                             regrid_destination=model_nc[0], regrid_options='bil', prefix=tmp_n)
                     # select domain
-                    b01=call(resource=b0, variable=ref_var, geom=bbox, spatial_wrapping='wrap',
-                             prefix='ref_Rdom_'+os.path.basename(z)[0:-3])
+                    b01 = call(resource=b0, variable=ref_var, geom=bbox, spatial_wrapping='wrap',
+                             prefix='ref_Rdom_' + os.path.basename(z)[0:-3])
 
-                    tbr='rm -f %s' % (b0)
+                    tbr = 'rm -f %s' % (b0)
                     os.system(tbr)
-                    tbr='rm -f %s.nc' % (tmp_n)
+                    tbr = 'rm -f %s.nc' % (tmp_n)
                     os.system(tbr)
 
                     tmp_total.append(b01)
@@ -483,7 +481,7 @@ class AnalogsRe2ReProcess(Process):
                 archive = call(resource=tmp_total, variable=ref_var, time_range=[refSt, refEn], prefix=archiveNameString)
                 # Clean
                 for i in tmp_total:
-                    tbr='rm -f %s' % (i) 
+                    tbr = 'rm -f %s' % (i)
                     os.system(tbr)
             else:
                 LOGGER.debug('Using whole dataset at once')
@@ -527,8 +525,7 @@ class AnalogsRe2ReProcess(Process):
             LOGGER.exception(msg)
             raise Exception(msg)
 
-
-        #seacyc is False:
+        # seacyc is False:
         seasoncyc_base = seasoncyc_sim = None
 
         output_file = 'output.txt'
@@ -564,30 +561,30 @@ class AnalogsRe2ReProcess(Process):
         #######################
         start_time = time.time()  # measure call castf90
 
-        #-----------------------
+        # -----------------------
         try:
             import ctypes
             # TODO: This lib is for linux
             mkl_rt = ctypes.CDLL('libmkl_rt.so')
-            nth=mkl_rt.mkl_get_max_threads()
+            nth = mkl_rt.mkl_get_max_threads()
             LOGGER.debug('Current number of threads: %s' % (nth))
             mkl_rt.mkl_set_num_threads(ctypes.byref(ctypes.c_int(64)))
-            nth=mkl_rt.mkl_get_max_threads()
+            nth = mkl_rt.mkl_get_max_threads()
             LOGGER.debug('NEW number of threads: %s' % (nth))
             # TODO: Does it \/\/\/ work with default shell=False in subprocess... (?)
-            os.environ['MKL_NUM_THREADS']=str(nth)
-            os.environ['OMP_NUM_THREADS']=str(nth)
+            os.environ['MKL_NUM_THREADS'] = str(nth)
+            os.environ['OMP_NUM_THREADS'] = str(nth)
         except Exception as e:
             msg = 'Failed to set THREADS %s ' % e
             LOGGER.debug(msg)
-        #-----------------------
+        # -----------------------
 
         # ##### TEMPORAL WORKAROUND! With instaled hdf5-1.8.18 in anaconda ###############
         # ##### MUST be removed after castf90 recompiled with the latest hdf version
         # ##### NOT safe
         os.environ['HDF5_DISABLE_VERSION_CHECK'] = '1'
-        #hdflib = os.path.expanduser("~") + '/anaconda/lib'
-        #hdflib = os.getenv("HOME") + '/anaconda/lib'
+        # hdflib = os.path.expanduser("~") + '/anaconda/lib'
+        # hdflib = os.getenv("HOME") + '/anaconda/lib'
         import pwd
         hdflib = pwd.getpwuid(os.getuid()).pw_dir + '/anaconda/lib'
         os.environ['LD_LIBRARY_PATH'] = hdflib
@@ -609,14 +606,14 @@ class AnalogsRe2ReProcess(Process):
 
         # TODO: Add try - except for pdfs
         if plot == 'Yes':
-            analogs_pdf = analogs.plot_analogs(configfile=config_file)   
+            analogs_pdf = analogs.plot_analogs(configfile=config_file)
         else:
             analogs_pdf = 'dummy_plot.pdf'
             with open(analogs_pdf, 'a'): os.utime(analogs_pdf, None)
 
         response.update_status('preparing output', 70)
 
-        response.outputs['analog_pdf'].file = analogs_pdf 
+        response.outputs['analog_pdf'].file = analogs_pdf
         response.outputs['config'].file = config_file
         response.outputs['analogs'].file = output_file
 
@@ -643,8 +640,3 @@ class AnalogsRe2ReProcess(Process):
         LOGGER.debug("total execution took %s seconds.",
                      time.time() - process_start_time)
         return response
-
-
-
-
-

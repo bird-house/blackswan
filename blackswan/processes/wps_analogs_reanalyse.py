@@ -272,7 +272,7 @@ class AnalogsreanalyseProcess(Process):
             nanalog = request.inputs['nanalog'][0].data
             timres = request.inputs['timeres'][0].data
 
-            bboxDef = '-20,40,30,70' # in general format
+            bboxDef = '-20,40,30,70'  # in general format
 
             bbox = []
             bboxStr = request.inputs['BBox'][0].data
@@ -284,7 +284,7 @@ class AnalogsreanalyseProcess(Process):
                     abs(float(bboxStr[1]) > 180) or
                     abs(float(bboxStr[2]) > 90) or
                     abs(float(bboxStr[3])) > 90):
-                bboxStr = bboxDef # request.inputs['BBox'].default  # .default doesn't work anymore!!!
+                bboxStr = bboxDef  # request.inputs['BBox'].default  # .default doesn't work anymore!!!
                 LOGGER.debug('BBOX is out of the range, using default instead: %s ' % (bboxStr))
                 bboxStr = bboxStr.split(',')
 
@@ -350,19 +350,20 @@ class AnalogsreanalyseProcess(Process):
                 getlevel = False
                 if 'z' in var:
                     level = var.strip('z')
-                    conform_units_to = None
+                    # conform_units_to = None
                 else:
                     level = None
-                    if var == 'precip': var = 'pr_wtr'
-                    conform_units_to = 'hPa'
+                    if var == 'precip':
+                        var = 'pr_wtr'
+                    # conform_units_to = 'hPa'
             elif '20CRV2' in model:
                 getlevel = False
                 if 'z' in var:
                     level = var.strip('z')
-                    conform_units_to = None
+                    # conform_units_to = None
                 else:
                     level = None
-                    conform_units_to = 'hPa'
+                    # conform_units_to = 'hPa'
             else:
                 LOGGER.exception('Reanalyses dataset not known')
             LOGGER.info('environment set for model: %s' % model)
@@ -374,8 +375,9 @@ class AnalogsreanalyseProcess(Process):
         ##########################################
         # fetch Data from original data archive
         ##########################################
-                
-        # NOTE: If ref is say 1950 - 1990, and sim is just 1 week in 2017 - ALL the data will be downloaded, 1950 - 2017 
+
+        # NOTE: If ref is say 1950 - 1990, and sim is just 1 week in 2017:
+        # - ALL the data will be downloaded, 1950 - 2017
         try:
             model_nc = rl(start=start.year,
                           end=end.year,
@@ -395,7 +397,7 @@ class AnalogsreanalyseProcess(Process):
         # Checking memory and dataset size
         model_size = get_files_size(model_nc)
         memory_avail = psutil.virtual_memory().available
-        thrs = 0.5 # 50%
+        thrs = 0.5  # 50%
         if (model_size >= thrs * memory_avail):
             ser_r = True
         else:
@@ -409,14 +411,14 @@ class AnalogsreanalyseProcess(Process):
         # TODO: benchmark the method bellow for NCEP z500 for 60 years
 
 #        if ('20CRV2' in model) and ('z' in var):
-        if ('z' in var):  
+        if ('z' in var):
             tmp_total = []
             origvar = get_variable(model_nc)
 
             for z in model_nc:
-                tmp_n = 'tmp_%s' % (uuid.uuid1()) 
-                b0=call(resource=z, variable=origvar, level_range=[int(level), int(level)], geom=bbox,
-                spatial_wrapping='wrap', prefix='levdom_'+os.path.basename(z)[0:-3])
+                # tmp_n = 'tmp_%s' % (uuid.uuid1())
+                b0 = call(resource=z, variable=origvar, level_range=[int(level), int(level)], geom=bbox,
+                spatial_wrapping='wrap', prefix='levdom_' + os.path.basename(z)[0:-3])
                 tmp_total.append(b0)
 
             tmp_total = sorted(tmp_total, key=lambda i: os.path.splitext(os.path.basename(i))[0])
@@ -424,8 +426,8 @@ class AnalogsreanalyseProcess(Process):
 
             # Clean
             for i in tmp_total:
-                tbr='rm -f %s' % (i) 
-                os.system(tbr)  
+                tbr = 'rm -f %s' % (i)
+                os.system(tbr)
 
             # Create new variable
             ds = Dataset(inter_subset_tmp, mode='a')
@@ -441,9 +443,9 @@ class AnalogsreanalyseProcess(Process):
                 LOGGER.debug('Process reanalysis step-by-step')
                 tmp_total = []
                 for z in model_nc:
-                    tmp_n = 'tmp_%s' % (uuid.uuid1()) 
-                    b0=call(resource=z, variable=var, geom=bbox, spatial_wrapping='wrap',
-                            prefix='Rdom_'+os.path.basename(z)[0:-3])
+                    # tmp_n = 'tmp_%s' % (uuid.uuid1())
+                    b0 = call(resource=z, variable=var, geom=bbox, spatial_wrapping='wrap',
+                            prefix='Rdom_' + os.path.basename(z)[0:-3])
                     tmp_total.append(b0)
                 tmp_total = sorted(tmp_total, key=lambda i: os.path.splitext(os.path.basename(i))[0])
                 model_subset_tmp = call(resource=tmp_total, variable=var, time_range=time_range)
@@ -453,21 +455,21 @@ class AnalogsreanalyseProcess(Process):
                                         geom=bbox, spatial_wrapping='wrap', time_range=time_range,
                                         )
 
-        # If dataset is 20CRV2 the 6 hourly file should be converted to daily.  
+        # If dataset is 20CRV2 the 6 hourly file should be converted to daily.
         # Option to use previously 6h data from cache (if any) and not download daily files.
 
         if '20CRV2' in model:
             if timres == '6h':
                 from cdo import Cdo
-                
+
                 cdo = Cdo(env=os.environ)
                 model_subset = '%s.nc' % uuid.uuid1()
                 tmp_f = '%s.nc' % uuid.uuid1()
 
-                cdo_op = getattr(cdo,'daymean')
+                cdo_op = getattr(cdo, 'daymean')
                 cdo_op(input=model_subset_tmp, output=tmp_f)
-                sti = '00:00:00' 
-                cdo_op = getattr(cdo,'settime')
+                sti = '00:00:00'
+                cdo_op = getattr(cdo, 'settime')
                 cdo_op(sti, input=tmp_f, output=model_subset)
                 LOGGER.debug('File Converted from: %s to daily' % (timres))
             else:
@@ -483,12 +485,12 @@ class AnalogsreanalyseProcess(Process):
         # Original model subset kept to further visualisaion if needed
         # Now is issue with SLP:
         # TODO 1 Keep trend as separate file
-        # TODO 2 Think how to add options to plot abomalies AND original data... 
+        # TODO 2 Think how to add options to plot abomalies AND original data...
         #        May be do archive and simulation = call.. over NOT detrended data and keep it as well
         # TODO 3 Check with faster smoother add removing trend of each grid
 
         if detrend == 'None':
-            orig_model_subset = model_subset            
+            orig_model_subset = model_subset
         else:
             orig_model_subset = remove_mean_trend(model_subset, varname=var)
 
@@ -579,30 +581,30 @@ class AnalogsreanalyseProcess(Process):
         #######################
         start_time = time.time()  # measure call castf90
 
-        #-----------------------
+        # -----------------------
         try:
             import ctypes
             # TODO: This lib is for linux
             mkl_rt = ctypes.CDLL('libmkl_rt.so')
-            nth=mkl_rt.mkl_get_max_threads()
+            nth = mkl_rt.mkl_get_max_threads()
             LOGGER.debug('Current number of threads: %s' % (nth))
             mkl_rt.mkl_set_num_threads(ctypes.byref(ctypes.c_int(64)))
-            nth=mkl_rt.mkl_get_max_threads()
+            nth = mkl_rt.mkl_get_max_threads()
             LOGGER.debug('NEW number of threads: %s' % (nth))
             # TODO: Does it \/\/\/ work with default shell=False in subprocess... (?)
-            os.environ['MKL_NUM_THREADS']=str(nth)
-            os.environ['OMP_NUM_THREADS']=str(nth)
+            os.environ['MKL_NUM_THREADS'] = str(nth)
+            os.environ['OMP_NUM_THREADS'] = str(nth)
         except Exception as e:
             msg = 'Failed to set THREADS %s ' % e
             LOGGER.debug(msg)
-        #-----------------------
+        # -----------------------
 
         # ##### TEMPORAL WORKAROUND! With instaled hdf5-1.8.18 in anaconda ###############
         # ##### MUST be removed after castf90 recompiled with the latest hdf version
         # ##### NOT safe
         os.environ['HDF5_DISABLE_VERSION_CHECK'] = '1'
-        #hdflib = os.path.expanduser("~") + '/anaconda/lib'
-        #hdflib = os.getenv("HOME") + '/anaconda/lib'
+        # hdflib = os.path.expanduser("~") + '/anaconda/lib'
+        # hdflib = os.getenv("HOME") + '/anaconda/lib'
         import pwd
         hdflib = pwd.getpwuid(os.getuid()).pw_dir + '/anaconda/lib'
         os.environ['LD_LIBRARY_PATH'] = hdflib
@@ -624,14 +626,14 @@ class AnalogsreanalyseProcess(Process):
 
         # TODO: Add try - except for pdfs
         if plot == 'Yes':
-            analogs_pdf = analogs.plot_analogs(configfile=config_file)   
+            analogs_pdf = analogs.plot_analogs(configfile=config_file)
         else:
             analogs_pdf = 'dummy_plot.pdf'
             with open(analogs_pdf, 'a'): os.utime(analogs_pdf, None)
 
         response.update_status('preparing output', 70)
 
-        response.outputs['analog_pdf'].file = analogs_pdf 
+        response.outputs['analog_pdf'].file = analogs_pdf
         response.outputs['config'].file = config_file
         response.outputs['analogs'].file = output_file
         response.outputs['output_netcdf'].file = simulation
@@ -642,8 +644,8 @@ class AnalogsreanalyseProcess(Process):
             response.outputs['sim_netcdf'].file = seasoncyc_sim
         else:
             # TODO: Still unclear how to overpass unknown number of outputs
-            dummy_base='dummy_base.nc'
-            dummy_sim='dummy_sim.nc'
+            dummy_base = 'dummy_base.nc'
+            dummy_sim = 'dummy_sim.nc'
             with open(dummy_base, 'a'): os.utime(dummy_base, None)
             with open(dummy_sim, 'a'): os.utime(dummy_sim, None)
             response.outputs['base_netcdf'].file = dummy_base

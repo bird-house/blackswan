@@ -8,6 +8,7 @@ from os import listdir
 
 import numpy as np
 
+
 def fieldmean(resource):
     """
     calculating of a weighted field mean
@@ -20,7 +21,7 @@ def fieldmean(resource):
     from numpy import radians, average, cos, sqrt, array
 
     data = get_values(resource)  # np.squeeze(ds.variables[variable][:])
-    dim = data.shape
+    # dim = data.shape
     LOGGER.debug(data.shape)
 
     if len(data.shape) == 3:
@@ -48,6 +49,7 @@ def fieldmean(resource):
         LOGGER.error('not 3D shaped data. Average can not be calculated')
     return meanTimeserie
 
+
 def remove_mean_trend(fana, varname):
     """
     Removing the smooth trend from 3D netcdf file
@@ -61,7 +63,7 @@ def remove_mean_trend(fana, varname):
     if type(fana) == list:
         fana = fana[0]
 
-    backup_ana = 'orig_mod_'+path.basename(fana)
+    backup_ana = 'orig_mod_' + path.basename(fana)
 
     cdo = Cdo(env=environ)
 
@@ -70,11 +72,11 @@ def remove_mean_trend(fana, varname):
     # TODO: Fix CDO versioning workaround...
 
     try:
-        cdo_cp = getattr(cdo,'copy')
+        cdo_cp = getattr(cdo, 'copy')
         cdo_cp(input=fana, output=backup_ana)
     except:
         if(path.isfile(backup_ana)==False):
-            com='copy'
+            com = 'copy'
             comcdo = 'cdo -O %s %s %s' % (com, fana, backup_ana)
             system(comcdo)
         else:
@@ -83,32 +85,32 @@ def remove_mean_trend(fana, varname):
     # create fmana - mean field
     fmana = '%s.nc' % uuid.uuid1()
 
-    cdo_op = getattr(cdo,'fldmean')
+    cdo_op = getattr(cdo, 'fldmean')
     cdo_op(input=fana, output=fmana)
 
     mean_arc_dataset = Dataset(fmana)
     mean_arcvar = mean_arc_dataset.variables[varname][:]
-    data=mean_arcvar[:,0,0]
-    mean_arc_dataset.close()    
-    x = np.linspace(0,len(data)-1,len(data))
+    data = mean_arcvar[:,0,0]
+    mean_arc_dataset.close() 
+    x = np.linspace(0, len(data)-1, len(data))
     y = data
 
-    # Very slow method. 
-    # TODO: sub by fast one 
+    # Very slow method.
+    # TODO: sub by fast one
     # (there is one in R, but doesn't want to add R to analogs...)
-    spl = UnivariateSpline(x,y)
+    spl = UnivariateSpline(x, y)
 
     smf = (len(y)) * np.var(y)
     spl.set_smoothing_factor(smf)
-    trend = np.zeros(len(y),dtype=np.float)
+    trend = np.zeros(len(y), dtype=np.float)
     trend[:] = spl(x)
 
 #    orig_arc_dataset = Dataset(fana,'r+')
-    orig_arc_dataset = Dataset(fana,'a')
+    orig_arc_dataset = Dataset(fana, 'a')
     orig_arcvar = orig_arc_dataset.variables.pop(varname)
     orig_data = orig_arcvar[:]
 
-    det = np.zeros(np.shape(orig_data),dtype=np.float)
+    det = np.zeros(np.shape(orig_data), dtype=np.float)
     det = (orig_data.T - trend).T
 
     orig_arcvar[:] = det
@@ -116,8 +118,8 @@ def remove_mean_trend(fana, varname):
     at = {k: orig_arcvar.getncattr(k) for k in orig_arcvar.ncattrs()}
     maxat = np.max(det)
     minat = np.min(det)
-    act = np.zeros((2),dtype=np.float32)
-    valid = np.zeros((2),dtype=np.float32)
+    act = np.zeros((2), dtype=np.float32)
+    valid = np.zeros((2), dtype=np.float32)
     act[0] = minat
     act[1] = maxat
     valid[0] = minat - abs(0.2*minat)
@@ -133,4 +135,3 @@ def remove_mean_trend(fana, varname):
     orig_arc_dataset.close()
 
     return backup_ana
-

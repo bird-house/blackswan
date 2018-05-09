@@ -15,7 +15,7 @@ from blackswan.ocgis_module import call
 from blackswan.datafetch import reanalyses
 from blackswan.utils import get_variable, rename_variable
 from blackswan.utils import rename_complexinputs
-from blackswan.utils import archive, archiveextract
+from blackswan.utils import archiveextract
 from blackswan.utils import get_timerange, get_calendar
 from blackswan.log import init_process_logger
 from blackswan.datafetch import _PRESSUREDATA_
@@ -165,7 +165,7 @@ class AnalogscompareProcess(Process):
                          min_occurs=1,
                          max_occurs=1,
                          allowed_values=['reanalyses']
-                         #allowed_values=['reanalyses', 'model']
+                         # allowed_values=['reanalyses', 'model']
                          ),
 
             LiteralInput("plot", "Plot",
@@ -243,7 +243,6 @@ class AnalogscompareProcess(Process):
             store_supported=True,
         )
 
-
     def _handler(self, request, response):
         init_process_logger('log.txt')
         response.outputs['output_log'].file = 'log.txt'
@@ -281,7 +280,7 @@ class AnalogscompareProcess(Process):
                     if refEn.day == 31:
                         refEn = refEn.replace(day=30)
                         LOGGER.debug('Date has been changed for: %s' % (refEn))
-                else: # mo2re
+                else:  # mo2re
                     if dateSt.day == 31:
                         dateSt = dateSt.replace(day=30)
                         LOGGER.debug('Date has been changed for: %s' % (dateSt))
@@ -294,7 +293,7 @@ class AnalogscompareProcess(Process):
         seasonwin = request.inputs['seasonwin'][0].data
         nanalog = request.inputs['nanalog'][0].data
 
-        bboxDef = '-20,40,30,70' # in general format
+        bboxDef = '-20,40,30,70'  # in general format
 
         bbox = []
         bboxStr = request.inputs['BBox'][0].data
@@ -306,7 +305,7 @@ class AnalogscompareProcess(Process):
                 abs(float(bboxStr[1]) > 180) or
                 abs(float(bboxStr[2]) > 90) or
                 abs(float(bboxStr[3])) > 90):
-            bboxStr = bboxDef # request.inputs['BBox'].default  # .default doesn't work anymore!!!
+            bboxStr = bboxDef  # request.inputs['BBox'].default  # .default doesn't work anymore!!!
             LOGGER.debug('BBOX is out of the range, using default instead: %s ' % (bboxStr))
             bboxStr = bboxStr.split(',')
 
@@ -333,10 +332,10 @@ class AnalogscompareProcess(Process):
                 r_time_range = [anaSt, anaEn]
                 m_time_range = [refSt, refEn]
             elif direction == 'mo2re':
-                anaSt = dt.combine(dateSt, dt_time(12, 0)) #dt.strptime(refSt[0], '%Y-%m-%d')
-                anaEn = dt.combine(dateEn, dt_time(12, 0)) #dt.strptime(refEn[0], '%Y-%m-%d')
-                refSt = dt.combine(refSt, dt_time(0, 0))   #dt.strptime(dateSt[0], '%Y-%m-%d')
-                refEn = dt.combine(refEn, dt_time(0, 0))   #dt.strptime(dateEn[0], '%Y-%m-%d')
+                anaSt = dt.combine(dateSt, dt_time(12, 0))  # dt.strptime(refSt[0], '%Y-%m-%d')
+                anaEn = dt.combine(dateEn, dt_time(12, 0))  # dt.strptime(refEn[0], '%Y-%m-%d')
+                refSt = dt.combine(refSt, dt_time(0, 0))   # dt.strptime(dateSt[0], '%Y-%m-%d')
+                refEn = dt.combine(refEn, dt_time(0, 0))   # dt.strptime(dateEn[0], '%Y-%m-%d')
                 r_time_range = [refSt, refEn]
                 m_time_range = [anaSt, anaEn]
             else:
@@ -360,7 +359,7 @@ class AnalogscompareProcess(Process):
 
         try:
             if model == 'NCEP':
-                #getlevel = True
+                # getlevel = True
                 getlevel = False
                 if 'z' in var:
                     level = var.strip('z')
@@ -423,9 +422,9 @@ class AnalogscompareProcess(Process):
                 origvar = get_variable(nc_reanalyses[0])
 
                 for z in nc_reanalyses:
-                    #tmp_n = 'tmp_%s' % (uuid.uuid1())
-                    b0=call(resource=z, variable=origvar, level_range=[int(level), int(level)], geom=bbox,
-                    spatial_wrapping='wrap',prefix='levdom_'+path.basename(z)[0:-3])
+                    # tmp_n = 'tmp_%s' % (uuid.uuid1())
+                    b0 = call(resource=z, variable=origvar, level_range=[int(level), int(level)], geom=bbox,
+                    spatial_wrapping='wrap',prefix='levdom_' + path.basename(z)[0:-3])
                     tmp_total.append(b0)
 
                 tmp_total = sorted(tmp_total, key=lambda i: path.splitext(path.basename(i))[0])
@@ -442,10 +441,10 @@ class AnalogscompareProcess(Process):
                 nc_subset = call(inter_subset_tmp, variable='z%s' % level)
                 # Clean
                 for i in tmp_total:
-                    tbr='rm -f %s' % (i)
+                    tbr = 'rm -f %s' % (i)
                     system(tbr)
-                #for i in inter_subset_tmp
-                tbr='rm -f %s' % (inter_subset_tmp)
+                # for i in inter_subset_tmp
+                tbr = 'rm -f %s' % (inter_subset_tmp)
                 system(tbr)
             else:
                 # TODO: ADD HERE serial as well as in weatherrigimes!
@@ -471,9 +470,9 @@ class AnalogscompareProcess(Process):
 
         for re in resource:
             s,e = get_timerange(re)
-            tmpSt = dt.strptime(s,'%Y%m%d')
-            tmpEn = dt.strptime(e,'%Y%m%d')
-            if ((tmpSt <= m_end ) and (tmpEn >= m_start)):
+            tmpSt = dt.strptime(s, '%Y%m%d')
+            tmpEn = dt.strptime(e, '%Y%m%d')
+            if ((tmpSt <= m_end) and (tmpEn >= m_start)):
                 tmp_resource.append(re)
                 LOGGER.debug('Selected file: %s ' % (re))
         resource = tmp_resource
@@ -482,8 +481,8 @@ class AnalogscompareProcess(Process):
         # TODO: Check the callendars ! for model vs reanalyses.
         # TODO: Check the units! model vs reanalyses.
         try:
-            m_total=[]
-            modvar=get_variable(resource)
+            m_total = []
+            modvar = get_variable(resource)
             # resource properties
             ds = Dataset(resource[0])
             m_var = ds.variables[modvar]
@@ -499,12 +498,12 @@ class AnalogscompareProcess(Process):
 
             lev_units = 'hPa'
 
-            if (dimlen>3) :
+            if (dimlen > 3):
                 lev = ds.variables[dims[1]]
                 # actually index [1] need to be detected... assuming zg(time, plev, lat, lon)
                 lev_units = lev.units
 
-                if (lev_units=='Pa'):
+                if (lev_units == 'Pa'):
                     m_level = str(int(level)*100)
                 else:
                     m_level = level
@@ -512,24 +511,24 @@ class AnalogscompareProcess(Process):
                 m_level = None
 
             if level == None:
-                level_range=None
+                level_range = None
             else:
                 level_range = [int(m_level), int(m_level)]
 
             ds.close()
 
             for z in resource:
-                tmp_n='tmp_%s' % (uuid.uuid1())
+                tmp_n = 'tmp_%s' % (uuid.uuid1())
                 # select level and regrid
-                b0=call(resource=z, variable=modvar, level_range=level_range,
+                b0 = call(resource=z, variable=modvar, level_range=level_range,
                         spatial_wrapping='wrap', cdover='system',
                         regrid_destination=nc_reanalyses[0], regrid_options='bil', prefix=tmp_n)
 
                 # select domain
-                b01=call(resource=b0, geom=bbox, spatial_wrapping='wrap', prefix='levregr_'+path.basename(z)[0:-3])
-                tbr='rm -f %s' % (b0)
+                b01 = call(resource=b0, geom=bbox, spatial_wrapping='wrap', prefix='levregr_' + path.basename(z)[0:-3])
+                tbr = 'rm -f %s' % (b0)
                 system(tbr)
-                tbr='rm -f %s.nc' % (tmp_n)
+                tbr = 'rm -f %s.nc' % (tmp_n)
                 system(tbr)
                 # get full resource
                 m_total.append(b01)
@@ -537,7 +536,7 @@ class AnalogscompareProcess(Process):
             model_subset = call(m_total, time_range=m_time_range)
 
             for i in m_total:
-                tbr='rm -f %s' % (i)
+                tbr = 'rm -f %s' % (i)
                 system(tbr)
 
             if m_level is not None:
@@ -620,7 +619,7 @@ class AnalogscompareProcess(Process):
         simDatesString = dateSt.isoformat().strip().split("T")[0] + "_" + dateEn.isoformat().strip().split("T")[0]
 
         archiveNameString = "base_" + out_var + "_" + refDatesString + '_%.1f_%.1f_%.1f_%.1f' \
-                            % (bbox[0], bbox[2], bbox[1], bbox[3]) +'.nc'
+                            % (bbox[0], bbox[2], bbox[1], bbox[3]) + '.nc'
         simNameString = "sim_" + out_var + "_" + simDatesString + '_%.1f_%.1f_%.1f_%.1f' \
                         % (bbox[0], bbox[2], bbox[1], bbox[3]) + '.nc'
 
@@ -647,7 +646,7 @@ class AnalogscompareProcess(Process):
                 base_id=base_id,
                 sim_id=sim_id,
                 timewin=timewin,
-#                varname=var,
+                # varname=var,
                 varname=out_var,
                 seacyc=seacyc,
                 cycsmooth=91,
@@ -675,30 +674,30 @@ class AnalogscompareProcess(Process):
 
         response.update_status('Start CASTf90 call', 60)
 
-        #-----------------------
+        # -----------------------
         try:
             import ctypes
             # TODO: This lib is for linux
             mkl_rt = ctypes.CDLL('libmkl_rt.so')
-            nth=mkl_rt.mkl_get_max_threads()
+            nth = mkl_rt.mkl_get_max_threads()
             LOGGER.debug('Current number of threads: %s' % (nth))
             mkl_rt.mkl_set_num_threads(ctypes.byref(ctypes.c_int(64)))
-            nth=mkl_rt.mkl_get_max_threads()
+            nth = mkl_rt.mkl_get_max_threads()
             LOGGER.debug('NEW number of threads: %s' % (nth))
             # TODO: Does it \/\/\/ work with default shell=False in subprocess... (?)
-            environ['MKL_NUM_THREADS']=str(nth)
-            environ['OMP_NUM_THREADS']=str(nth)
+            environ['MKL_NUM_THREADS'] = str(nth)
+            environ['OMP_NUM_THREADS'] = str(nth)
         except Exception as e:
             msg = 'Failed to set THREADS %s ' % e
             LOGGER.debug(msg)
-        #-----------------------
+        # -----------------------
 
         # ##### TEMPORAL WORKAROUND! With instaled hdf5-1.8.18 in anaconda ###############
         # ##### MUST be removed after castf90 recompiled with the latest hdf version
         # ##### NOT safe
         environ['HDF5_DISABLE_VERSION_CHECK'] = '1'
-        #hdflib = os.path.expanduser("~") + '/anaconda/lib'
-        #hdflib = os.getenv("HOME") + '/anaconda/lib'
+        # hdflib = os.path.expanduser("~") + '/anaconda/lib'
+        # hdflib = os.getenv("HOME") + '/anaconda/lib'
         import pwd
         hdflib = pwd.getpwuid(getuid()).pw_dir + '/anaconda/lib'
         environ['LD_LIBRARY_PATH'] = hdflib
@@ -726,7 +725,7 @@ class AnalogscompareProcess(Process):
 
         # TODO: Add try - except for pdfs
         if plot == 'Yes':
-            analogs_pdf = analogs.plot_analogs(configfile=config_file)   
+            analogs_pdf = analogs.plot_analogs(configfile=config_file)
         else:
             analogs_pdf = 'dummy_plot.pdf'
             with open(analogs_pdf, 'a'): utime(analogs_pdf, None)
@@ -736,11 +735,10 @@ class AnalogscompareProcess(Process):
         # Stopper to keep twitcher results, for debug
         # dummy=dummy
         response.outputs['analog_pdf'].file = analogs_pdf
-        response.outputs['config'].file = config_file 
+        response.outputs['config'].file = config_file
         response.outputs['analogs'].file = output_file
         response.outputs['output_netcdf'].file = simulation
         response.outputs['target_netcdf'].file = archive
-
 
         ########################
         # generate analog viewer

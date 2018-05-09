@@ -27,8 +27,8 @@ LOGGER = logging.getLogger("PYWPS")
 
 class PythonanattributionProcess(Process):
     def __init__(self):
-        #import pdb
-        #pdb.set_trace()
+        # import pdb
+        # pdb.set_trace()
         inputs = [
             LiteralInput("nsim", "numbers of simulated Y to generate with analogues",
                          abstract="number of simulations",
@@ -156,21 +156,22 @@ class PythonanattributionProcess(Process):
         # tas_jan18 = ytable.iloc[idx, 1]
         # tas_jan18 = tas_jan18.mean(axis=0)
 
-        # generate other possible realisations of temperature for January 2018 conditionnaly to the atmospheric circulation 
+        # generate other possible realisations of temperature for January 2018
+        # conditionnaly to the atmospheric circulation
 
-        #for period P1
-        ysim_p1 = analogs_generator(anafile = anafile1, yfile = yfile, nsim = nsim)
-        ymean_p1 = ysim_p1.mean(axis = 1)
+        # for period P1
+        ysim_p1 = analogs_generator(anafile=anafile1, yfile=yfile, nsim=nsim)
+        ymean_p1 = ysim_p1.mean(axis=1)
         print ysim_p1
 
-        #for period P2
-        ysim_p2 = analogs_generator(anafile = anafile2, yfile = yfile, nsim = nsim)
-        ymean_p2 = ysim_p2.mean(axis = 1)
+        # for period P2
+        ysim_p2 = analogs_generator(anafile=anafile2, yfile=yfile, nsim=nsim)
+        ymean_p2 = ysim_p2.mean(axis=1)
         print ysim_p2
         LOGGER.info('analogue generator done!')
 
         # Format the data into a Data.Frame to plot boxplots
-        plotdat = pandas.concat([ymean_p1, ymean_p2], axis = 1)
+        plotdat = pandas.concat([ymean_p1, ymean_p2], axis=1)
         plotdat.columns = ["P1", "P2"]
         print plotdat
 
@@ -187,9 +188,8 @@ class PythonanattributionProcess(Process):
         fig2 = plt.figure()
         plt.boxplot([ymean_p1, ymean_p2])
         LOGGER.info('plot2 done!')
-        #plt.axhline(y=tas_jan18)
+        # plt.axhline(y=tas_jan18)
 
-        
         from matplotlib.backends.backend_pdf import PdfPages
         pp = PdfPages(output_graphics)
         pp.savefig(fig1)
@@ -198,10 +198,10 @@ class PythonanattributionProcess(Process):
         response.update_status('**** anatribution in R suceeded', 90)
         LOGGER.info('saving plots done!')
 
-        #except Exception as e:
-        #   msg = 'Error in analogues_generator %s ' % e
-        #   LOGGER.error(msg)
-        #   raise Exception(msg)
+        # except Exception as e:
+        #    msg = 'Error in analogues_generator %s ' % e
+        #    LOGGER.error(msg)
+        #    raise Exception(msg)
 
         response.update_status('Anattribution done ', 92)
         ############################################

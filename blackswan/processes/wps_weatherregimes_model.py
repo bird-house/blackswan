@@ -182,12 +182,12 @@ class WeatherregimesmodelProcess(Process):
             if type(resource) == list:
                 resource = sorted(resource, key=lambda i: path.splitext(path.basename(i))[0])
             else:
-                resource=[resource]
+                resource = [resource]
 
             season = request.inputs['season'][0].data
             LOGGER.info('season %s', season)
 
-            bboxDef = '-80,50,20,70' # in general format
+            bboxDef = '-80,50,20,70'  # in general format
 
             bbox = []
             bboxStr = request.inputs['BBox'][0].data
@@ -199,7 +199,7 @@ class WeatherregimesmodelProcess(Process):
                     abs(float(bboxStr[1]) > 180) or
                     abs(float(bboxStr[2]) > 90) or
                     abs(float(bboxStr[3])) > 90):
-                bboxStr = bboxDef # request.inputs['BBox'].default  # .default doesn't work anymore!!!
+                bboxStr = bboxDef  # request.inputs['BBox'].default  # .default doesn't work anymore!!!
                 LOGGER.debug('BBOX is out of the range, using default instead: %s ' % (bboxStr))
                 bboxStr = bboxStr.split(',')
 
@@ -226,16 +226,16 @@ class WeatherregimesmodelProcess(Process):
             end = dt.strptime(period.split('-')[1], '%Y%m%d')
 
             # OCGIS for models workaround - to catch 31 of Dec
-            start = dt.combine(start, dt_time(12,0))
-            end = dt.combine(end, dt_time(12,0))
+            start = dt.combine(start, dt_time(12, 0))
+            end = dt.combine(end, dt_time(12, 0))
 
             cycst = anualcycle.split('-')[0]
             cycen = anualcycle.split('-')[1]
             reference = [dt.strptime(cycst, '%Y%m%d'), dt.strptime(cycen, '%Y%m%d')]
             LOGGER.debug('Reference start: %s , end: %s ' % (reference[0], reference[1]))
 
-            reference[0] = dt.combine(reference[0],dt_time(12,0))
-            reference[1] = dt.combine(reference[1],dt_time(12,0))
+            reference[0] = dt.combine(reference[0], dt_time(12, 0))
+            reference[1] = dt.combine(reference[1], dt_time(12, 0))
             LOGGER.debug('New Reference start: %s , end: %s ' % (reference[0], reference[1]))
 
             # Check if 360_day calendar (all months are exactly 30 days):
@@ -277,10 +277,10 @@ class WeatherregimesmodelProcess(Process):
 
         tmp_resource = []
         for re in resource:
-            s,e = get_timerange(re)
-            tmpSt = dt.strptime(s,'%Y%m%d')
-            tmpEn = dt.strptime(e,'%Y%m%d')
-            if ((tmpSt <= end ) and (tmpEn >= start)):
+            s, e = get_timerange(re)
+            tmpSt = dt.strptime(s, '%Y%m%d')
+            tmpEn = dt.strptime(e, '%Y%m%d')
+            if ((tmpSt <= end) and (tmpEn >= start)):
                 tmp_resource.append(re)
                 LOGGER.debug('Selected file: %s ' % (re))
         resource = tmp_resource
@@ -299,16 +299,16 @@ class WeatherregimesmodelProcess(Process):
 
         regr_res = []
         for z in resource:
-            tmp_n='tmp_%s' % (uuid.uuid1())
+            tmp_n = 'tmp_%s' % (uuid.uuid1())
 
             # XXXXXXX
             s,e = get_timerange(z)
-            tmpSt = dt.strptime(s,'%Y%m%d')
-            tmpEn = dt.strptime(e,'%Y%m%d')
-            tmpSt = dt.combine(tmpSt, dt_time(0,0))
-            tmpEn = dt.combine(tmpEn, dt_time(23,0))
+            tmpSt = dt.strptime(s, '%Y%m%d')
+            tmpEn = dt.strptime(e, '%Y%m%d')
+            tmpSt = dt.combine(tmpSt, dt_time(0, 0))
+            tmpEn = dt.combine(tmpEn, dt_time(23, 0))
 
-            if ((tmpSt <= start ) and (tmpEn >= end)):
+            if ((tmpSt <= start) and (tmpEn >= end)):
                 LOGGER.debug('Resource contains full record, selecting : %s ' % (time_range))
                 full_res = call(z, variable=variable, time_range=time_range)
             else:
@@ -324,27 +324,28 @@ class WeatherregimesmodelProcess(Process):
             # Adapt to work with levels for geopotential (check how its done for reanalysis process)
 
             # b0=call(resource=z, variable=variable,
-            b0=call(resource=full_res, variable=variable,
+            b0 = call(resource=full_res, variable=variable,
                     spatial_wrapping='wrap', cdover='system',
                     regrid_destination=ref_rea[0], regrid_options='bil', prefix=tmp_n)
 
-            # TODO: Use cdo regrid outside call - before call... 
+            # TODO: Use cdo regrid outside call - before call...
             # Some issues with produced ocgis file inside ocgis_module cdo regrid:
             # cdo remapbil (Abort): Unsupported projection coordinates (Variable: psl)!
 
             # select domain
-            b01=call(resource=b0, geom=bbox, spatial_wrapping='wrap', prefix='levregr_'+path.basename(z)[0:-3])
-            tbr='rm -f %s' % (b0)
+            b01 = call(resource=b0, geom=bbox, spatial_wrapping='wrap', prefix='levregr_' + path.basename(z)[0:-3])
+            tbr = 'rm -f %s' % (b0)
             system(tbr)
-            tbr='rm -f %s.nc' % (tmp_n)
+            tbr = 'rm -f %s.nc' % (tmp_n)
             system(tbr)
             # get full resource
             regr_res.append(b01)
 
         model_subset = call(regr_res, time_range=time_range)
 
+        # TODO: CHANGE to cross-platform
         for i in regr_res:
-            tbr='rm -f %s' % (i)
+            tbr = 'rm -f %s' % (i)
             system(tbr)
 
         # Get domain
@@ -394,14 +395,14 @@ class WeatherregimesmodelProcess(Process):
         from os.path import curdir, exists, join
 
         try:
-            rworkspace = curdir
+            # rworkspace = curdir
             Rsrc = config.Rsrc_dir()
             Rfile = 'weatherregimes_model.R'
 
             infile = model_season  # model_subset #model_ponderate
-            modelname = 'MODEL'
-            yr1 = start.year
-            yr2 = end.year
+            # modelname = 'MODEL'
+            # yr1 = start.year
+            # yr2 = end.year
             ip, output_graphics = mkstemp(dir=curdir, suffix='.pdf')
             ip, file_pca = mkstemp(dir=curdir, suffix='.txt')
             ip, file_class = mkstemp(dir=curdir, suffix='.Rdat')
@@ -413,7 +414,7 @@ class WeatherregimesmodelProcess(Process):
                     '%s' % start.year, '%s' % end.year,
                     '%s' % 'MODEL', '%s' % kappa]
             LOGGER.info('Rcall builded')
-            LOGGER.debug('ARGS: %s'%(args))
+            LOGGER.debug('ARGS: %s' % (args))
         except Exception as e:
             msg = 'failed to build the R command %s' % e
             LOGGER.error(msg)
