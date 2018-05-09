@@ -58,4 +58,3 @@ def simple_plot(resource, variable='air', lat='lat', lon ='lon', timestep=0, out
 
     print("Plot written to {}".format(output))
     return output
-

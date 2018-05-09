@@ -18,18 +18,20 @@ from os.path import basename, splitext
 import logging
 LOGGER = logging.getLogger("PYWPS")
 
-def ocgis_call_wrap(tmargs):
-    _z=tmargs[0]
-    _origvar=tmargs[1]
-    _level=tmargs[2]
-    _bbox=tmargs[3]
-    _plev=[int(_level), int(_level)]
-    _pref='levdom_'+basename(_z)[0:-3]
 
-    _tmpf=call(resource=_z, variable=_origvar, level_range=_plev, geom=_bbox,
+def ocgis_call_wrap(tmargs):
+    _z = tmargs[0]
+    _origvar = tmargs[1]
+    _level = tmargs[2]
+    _bbox = tmargs[3]
+    _plev = [int(_level), int(_level)]
+    _pref = 'levdom_' + basename(_z)[0:-3]
+
+    _tmpf = call(resource=_z, variable=_origvar, level_range=_plev, geom=_bbox,
                 spatial_wrapping='wrap', prefix=_pref)
 
     return _tmpf
+
 
 class WeatherregimesreanalyseProcess(Process):
     def __init__(self):
@@ -200,7 +202,7 @@ class WeatherregimesreanalyseProcess(Process):
         season = request.inputs['season'][0].data
         LOGGER.info('season %s', season)
 
-        bboxDef = '-80,50,20,70' # in general format
+        bboxDef = '-80,50,20,70'  # in general format
 
         bbox = []
         bboxStr = request.inputs['BBox'][0].data
@@ -212,7 +214,7 @@ class WeatherregimesreanalyseProcess(Process):
                 abs(float(bboxStr[1]) > 180) or
                 abs(float(bboxStr[2]) > 90) or
                 abs(float(bboxStr[3])) > 90):
-            bboxStr = bboxDef # request.inputs['BBox'].default  # .default doesn't work anymore!!!
+            bboxStr = bboxDef  # request.inputs['BBox'].default  # .default doesn't work anymore!!!
             LOGGER.debug('BBOX is out of the range, using default instead: %s ' % (bboxStr))
             bboxStr = bboxStr.split(',')
 
@@ -253,18 +255,18 @@ class WeatherregimesreanalyseProcess(Process):
                 getlevel = False
                 if 'z' in variable:
                     level = variable.strip('z')
-                    conform_units_to = None
+                    # conform_units_to = None
                 else:
                     level = None
-                    conform_units_to = 'hPa'
+                    # conform_units_to = 'hPa'
             elif '20CRV2' in model:
                 getlevel = False
                 if 'z' in variable:
                     level = variable.strip('z')
-                    conform_units_to = None
+                    # conform_units_to = None
                 else:
                     level = None
-                    conform_units_to = 'hPa'
+                    # conform_units_to = 'hPa'
             else:
                 LOGGER.exception('Reanalyses dataset not known')
             LOGGER.info('environment set for model: %s' % model)
@@ -325,11 +327,11 @@ class WeatherregimesreanalyseProcess(Process):
             if (LevMulti == False):
                 for z in model_nc:
                     b0 = call(resource=z, variable=origvar, level_range=level_range, geom=bbox,
-                    spatial_wrapping='wrap', prefix='levdom_'+basename(z)[0:-3])
+                    spatial_wrapping='wrap', prefix='levdom_' + basename(z)[0:-3])
                     tmp_total.append(b0)
             else:
                 # multiproc - no inprovements yet, need to check in hi perf machine...
-                #-----------------------
+                # -----------------------
                 try:
                     import ctypes
                     import os
@@ -341,17 +343,17 @@ class WeatherregimesreanalyseProcess(Process):
                     nth = mkl_rt.mkl_get_max_threads()
                     LOGGER.debug('NEW number of threads: %s' % (nth))
                     # TODO: Does it \/\/\/ work with default shell=False in subprocess... (?)
-                    os.environ['MKL_NUM_THREADS']=str(nth)
-                    os.environ['OMP_NUM_THREADS']=str(nth)
+                    os.environ['MKL_NUM_THREADS'] = str(nth)
+                    os.environ['OMP_NUM_THREADS'] = str(nth)
                 except Exception as e:
                     msg = 'Failed to set THREADS %s ' % e
                     LOGGER.debug(msg)
-                #-----------------------
+                # -----------------------
 
                 from multiprocessing import Pool
                 pool = Pool()
                 # from multiprocessing.dummy import Pool as ThreadPool
-                #pool = ThreadPool()
+                # pool = ThreadPool()
                 tup_var = [origvar] * len(model_nc)
                 tup_lev = [level] * len(model_nc)
                 tup_bbox = [bbox] * len(model_nc)
@@ -361,7 +363,7 @@ class WeatherregimesreanalyseProcess(Process):
                 pool.close()
                 pool.join()
 
-            LOGGER.debug('Temporal subset files: %s'%(tmp_total))
+            LOGGER.debug('Temporal subset files: %s' % (tmp_total))
 
             tmp_total = sorted(tmp_total, key=lambda i: splitext(basename(i))[0])
             inter_subset_tmp = call(resource=tmp_total, variable=origvar, time_range=time_range)
@@ -402,7 +404,7 @@ class WeatherregimesreanalyseProcess(Process):
         reference = [dt.strptime(cycst, '%Y%m%d'), dt.strptime(cycen, '%Y%m%d')]
         LOGGER.info('reference time: %s', reference)
 
-        model_anomal = wr.get_anomalies(model_subset, reference=reference, method=method, sseas=sseas) #, variable=variable)
+        model_anomal = wr.get_anomalies(model_subset, reference=reference, method=method, sseas=sseas)  # , variable=variable)
 
         #####################
         # extracting season
@@ -421,14 +423,14 @@ class WeatherregimesreanalyseProcess(Process):
         from os.path import curdir, exists, join
 
         try:
-            rworkspace = curdir
+            # rworkspace = curdir
             Rsrc = config.Rsrc_dir()
             Rfile = 'weatherregimes_model.R'
 
             infile = model_season  # model_subset #model_ponderate
-            modelname = model
-            yr1 = start.year
-            yr2 = end.year
+            # modelname = model
+            # yr1 = start.year
+            # yr2 = end.year
             ip, output_graphics = mkstemp(dir=curdir, suffix='.pdf')
             ip, file_pca = mkstemp(dir=curdir, suffix='.txt')
             ip, file_class = mkstemp(dir=curdir, suffix='.Rdat')
@@ -440,7 +442,7 @@ class WeatherregimesreanalyseProcess(Process):
                     '%s' % start.year, '%s' % end.year,
                     '%s' % model_var, '%s' % kappa]
             LOGGER.info('Rcall builded')
-            LOGGER.debug('ARGS: %s'%(args))
+            LOGGER.debug('ARGS: %s' % (args))
         except:
             msg = 'failed to build the R command'
             LOGGER.exception(msg)

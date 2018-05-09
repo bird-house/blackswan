@@ -25,11 +25,12 @@ _TIMEREGIONS_ = {'JJA': {'month': [6, 7, 8]},
 
 
 def _smooth(ts_latlon):
-    y = tile(ts_latlon,3)
+    y = tile(ts_latlon, 3)
     ts = len(ts_latlon)
     x = linspace(1, ts*3, num=ts*3, endpoint=True)
     ys = sm.nonparametric.lowess(y, x, frac=0.2)[ts:ts*2, 1]
     return ys
+
 
 def get_anomalies(nc_file, frac=0.2, reference=None, method='ocgis', sseas='serial', variable=None):
     """
@@ -50,13 +51,13 @@ def get_anomalies(nc_file, frac=0.2, reference=None, method='ocgis', sseas='seri
         variable = get_variable(nc_file)
         # if more when 2 variables:
         if (variable.count(variable)==0):
-            _ds=Dataset(nc_file)
+            _ds = Dataset(nc_file)
             # Works only if we have one 3D variables
             for j in variable:
                 if len(_ds.variables[j].dimensions)==3: _var=j
-            variable=_var
+            variable = _var
             _ds.close()
-    LOGGER.debug('3D Variable selected: %s'%(variable))
+    LOGGER.debug('3D Variable selected: %s' % (variable))
 
     try:
         if (method == 'cdo'):
@@ -66,7 +67,7 @@ def get_anomalies(nc_file, frac=0.2, reference=None, method='ocgis', sseas='seri
             ip2, nc_anual_cycle = mkstemp(dir='.', suffix='.nc')
 
             cdo = Cdo(env=environ)
-            #ip, nc_anual_cycle_tmp = mkstemp(dir='.', suffix='.nc')
+            # ip, nc_anual_cycle_tmp = mkstemp(dir='.', suffix='.nc')
             # TODO: if reference is none, use utils.get_time for nc_file to set the ref range
             #       But will need to fix 360_day issue (use get_time_nc from analogs)
 
@@ -78,7 +79,7 @@ def get_anomalies(nc_file, frac=0.2, reference=None, method='ocgis', sseas='seri
             # system(comcdo)
 
             # Sub cdo with this trick... Cdo keeps the precision and anomalies are integers...
-            calc = '%s=%s'%(variable, variable)
+            calc = '%s=%s' % (variable, variable)
             nc_anual_cycle_tmp = call(nc_file, time_range=reference, variable=variable, calc=calc)
             nc_anual_cycle = cdo.ydaymean(input=nc_anual_cycle_tmp, output=nc_anual_cycle)
         else:
@@ -98,8 +99,8 @@ def get_anomalies(nc_file, frac=0.2, reference=None, method='ocgis', sseas='seri
 
     try:
         # spline for smoothing
-        #import statsmodels.api as sm
-        #from numpy import tile, empty, linspace
+        # import statsmodels.api as sm
+        # from numpy import tile, empty, linspace
         from cdo import Cdo
         cdo = Cdo(env=environ)
         # variable = utils.get_variable(nc_file)
@@ -111,7 +112,7 @@ def get_anomalies(nc_file, frac=0.2, reference=None, method='ocgis', sseas='seri
 
         if ('serial' not in sseas):
             # Multiprocessing =======================
-            #-----------------------
+            # -----------------------
             try:
                 import ctypes
                 # TODO: This lib is for linux
@@ -122,12 +123,12 @@ def get_anomalies(nc_file, frac=0.2, reference=None, method='ocgis', sseas='seri
                 nth = mkl_rt.mkl_get_max_threads()
                 LOGGER.debug('NEW number of threads: %s' % (nth))
                 # TODO: Does it \/\/\/ work with default shell=False in subprocess... (?)
-                environ['MKL_NUM_THREADS']=str(nth)
-                environ['OMP_NUM_THREADS']=str(nth)
+                environ['MKL_NUM_THREADS'] = str(nth)
+                environ['OMP_NUM_THREADS'] = str(nth)
             except Exception as e:
                 msg = 'Failed to set THREADS %s ' % e
                 LOGGER.debug(msg)
-            #-----------------------
+            # -----------------------
 
             from multiprocessing import Pool
             pool = Pool()
@@ -149,11 +150,11 @@ def get_anomalies(nc_file, frac=0.2, reference=None, method='ocgis', sseas='seri
             pool.join()
 
             # TODO redo with reshape
-            ind=0
+            ind = 0
             for lat in range(vals.shape[1]):
                 for lon in range(vals.shape[2]):
                     vals_sm[:, lat, lon] = tmp_sm[ind]
-                    ind+=1
+                    ind += 1
         else:
             # Serial ==================================
             vals_sm = empty(vals.shape)

@@ -2,12 +2,12 @@ import os
 from os import path, environ, utime, getuid
 from tempfile import mkstemp
 from datetime import datetime as dt
-#from datetime import timedelta as td
+# from datetime import timedelta as td
 from datetime import time as dt_time
 from datetime import date
 import time  # performance test
 
-#later goes to utils
+# later goes to utils
 from netCDF4 import Dataset
 
 from blackswan.datafetch import _PRESSUREDATA_
@@ -16,7 +16,7 @@ from blackswan.ocgis_module import call
 from blackswan.datafetch import get_level
 from blackswan.utils import get_variable
 from blackswan.utils import rename_complexinputs
-from blackswan.utils import archive, archiveextract
+from blackswan.utils import archiveextract
 from blackswan.utils import get_timerange, get_calendar
 from blackswan.calculation import remove_mean_trend
 
@@ -278,12 +278,12 @@ class AnalogsmodelProcess(Process):
             seasonwin = request.inputs['seasonwin'][0].data
             nanalog = request.inputs['nanalog'][0].data
 
-            bboxDef = '-20,40,30,70' # in general format
+            bboxDef = '-20,40,30,70'  # in general format
             # level = 500
 
             level = request.inputs['level'][0].data
-            if (level == 500): 
-                dummylevel = 1000 # dummy workaround for cdo sellevel
+            if (level == 500):
+                dummylevel = 1000  # dummy workaround for cdo sellevel
             else:
                 dummylevel = 500
             LOGGER.debug('LEVEL selected: %s hPa' % (level))
@@ -298,7 +298,7 @@ class AnalogsmodelProcess(Process):
                     abs(float(bboxStr[1]) > 180) or
                     abs(float(bboxStr[2]) > 90) or
                     abs(float(bboxStr[3])) > 90):
-                bboxStr = bboxDef # request.inputs['BBox'].default  # .default doesn't work anymore!!!
+                bboxStr = bboxDef  # request.inputs['BBox'].default  # .default doesn't work anymore!!!
                 LOGGER.debug('BBOX is out of the range, using default instead: %s ' % (bboxStr))
                 bboxStr = bboxStr.split(',')
 
@@ -330,14 +330,16 @@ class AnalogsmodelProcess(Process):
         try:
 
             # not nesessary if fix ocgis_module.py
-            refSt = dt.combine(refSt, dt_time(12,0))
-            refEn = dt.combine(refEn, dt_time(12,0))
-            dateSt = dt.combine(dateSt, dt_time(12,0))
-            dateEn = dt.combine(dateEn, dt_time(12,0))
+            refSt = dt.combine(refSt, dt_time(12, 0))
+            refEn = dt.combine(refEn, dt_time(12, 0))
+            dateSt = dt.combine(dateSt, dt_time(12, 0))
+            dateEn = dt.combine(dateEn, dt_time(12, 0))
 
             # Check if 360_day calendar:
             try:
-                if type(resource) is not list: resource=[resource]
+                if type(resource) is not list:
+                    resource = [resource]
+
                 modcal, calunits = get_calendar(resource[0])
                 if '360_day' in modcal:
                     if refSt.day == 31:
@@ -394,19 +396,19 @@ class AnalogsmodelProcess(Process):
                 # resource.sort()
                 resource = sorted(resource, key=lambda i: path.splitext(path.basename(i))[0])
             else:
-                resource=[resource]
+                resource = [resource]
 
             # ===============================================================
-            # REMOVE resources which are out of interest from the list 
+            # REMOVE resources which are out of interest from the list
             # (years > and < than requested for calculation)
 
             tmp_resource = []
 
             for re in resource:
                 s,e = get_timerange(re)
-                tmpSt = dt.strptime(s,'%Y%m%d') 
-                tmpEn = dt.strptime(e,'%Y%m%d') 
-                if ((tmpSt <= end ) and (tmpEn >= start)):
+                tmpSt = dt.strptime(s, '%Y%m%d')
+                tmpEn = dt.strptime(e, '%Y%m%d')
+                if ((tmpSt <= end) and (tmpEn >= start)):
                     tmp_resource.append(re)
                     LOGGER.debug('Selected file: %s ' % (re))
             resource = tmp_resource
@@ -422,22 +424,22 @@ class AnalogsmodelProcess(Process):
             dimlen = len(dims)
 
             try:
-                model_id = ds.getncattr('model_id') 
+                model_id = ds.getncattr('model_id')
             except AttributeError:
                 model_id = 'Unknown model'
 
-            LOGGER.debug('MODEL: %s ' % (model_id)) 
+            LOGGER.debug('MODEL: %s ' % (model_id))
 
             lev_units = 'hPa'
 
-            if (dimlen>3) :
+            if (dimlen > 3):
                 lev = ds.variables[dims[1]]
                 # actually index [1] need to be detected... assuming zg(time, plev, lat, lon)
                 lev_units = lev.units
 
-                if (lev_units=='Pa'):
-                    level = level*100
-                    dummylevel = dummylevel*100
+                if (lev_units == 'Pa'):
+                    level = level * 100
+                    dummylevel = dummylevel * 100
                     # TODO: OR check the NAME and units of vertical level and find 200 , 300, or 500 mbar in it
                     # Not just level = level * 100.
 
@@ -445,15 +447,15 @@ class AnalogsmodelProcess(Process):
             from cdo import Cdo
             cdo = Cdo(env=environ)
 
-            lev_res=[]
-            if(dimlen>3):
+            lev_res = []
+            if(dimlen > 3):
                 for res_fn in resource:
                     tmp_f = 'lev_' + path.basename(res_fn)
                     try:
                         tmp_f = call(resource=res_fn, variable=variable, spatial_wrapping='wrap',
-                                     level_range=[int(level),int(level)], prefix=tmp_f[0:-3])
+                                     level_range=[int(level), int(level)], prefix=tmp_f[0:-3])
                     except:
-                        comcdo = '%s,%s' % (level,dummylevel)
+                        comcdo = '%s,%s' % (level, dummylevel)
                         cdo.sellevel(comcdo, input=res_fn, output=tmp_f)
                     lev_res.append(tmp_f)
             else:
@@ -467,20 +469,20 @@ class AnalogsmodelProcess(Process):
             regr_res = []
             for res_fn in lev_res:
                 tmp_f = 'dom_' + path.basename(res_fn)
-                comcdo = '%s,%s,%s,%s' % (bbox[0],bbox[2],bbox[1],bbox[3])
+                comcdo = '%s,%s,%s,%s' % (bbox[0], bbox[2], bbox[1], bbox[3])
                 try:
                     tmp_f = call(resource=res_fn, geom=bbox, spatial_wrapping='wrap', prefix=tmp_f[0:-3])
                 except:
                     cdo.sellonlatbox(comcdo, input=res_fn, output=tmp_f)
                 regr_res.append(tmp_f)
 
-            # ============================  
+            # ============================
             # Block to Detrend data
             # TODO 1 Keep trend as separate file
-            # TODO 2 Think how to add options to plot abomalies AND original data... 
+            # TODO 2 Think how to add options to plot abomalies AND original data...
             #        May be do archive and simulation = call.. over NOT detrended data and keep it as well
-            if (dimlen>3) :
-                res_tmp = get_level(regr_res, level = level)
+            if (dimlen > 3):
+                res_tmp = get_level(regr_res, level=level)
                 variable = 'z%s' % level
             else:
                 res_tmp = call(resource=regr_res, spatial_wrapping='wrap')
@@ -546,7 +548,7 @@ class AnalogsmodelProcess(Process):
                 seasoncyc_base=seasoncyc_base,
                 seasoncyc_sim=seasoncyc_sim,
                 base_id=model_id,
-                sim_id=model_id, 
+                sim_id=model_id,
                 timewin=timewin,
                 varname=variable,
                 seacyc=seacyc,
@@ -576,23 +578,23 @@ class AnalogsmodelProcess(Process):
         start_time = time.time()  # measure call castf90
         response.update_status('Start CASTf90 call', 60)
 
-        #-----------------------
+        # -----------------------
         try:
             import ctypes
             # TODO: This lib is for linux
             mkl_rt = ctypes.CDLL('libmkl_rt.so')
-            nth=mkl_rt.mkl_get_max_threads()
+            nth = mkl_rt.mkl_get_max_threads()
             LOGGER.debug('Current number of threads: %s' % (nth))
             mkl_rt.mkl_set_num_threads(ctypes.byref(ctypes.c_int(64)))
-            nth=mkl_rt.mkl_get_max_threads()
+            nth = mkl_rt.mkl_get_max_threads()
             LOGGER.debug('NEW number of threads: %s' % (nth))
             # TODO: Does it \/\/\/ work with default shell=False in subprocess... (?)
-            environ['MKL_NUM_THREADS']=str(nth)
-            environ['OMP_NUM_THREADS']=str(nth)
+            environ['MKL_NUM_THREADS'] = str(nth)
+            environ['OMP_NUM_THREADS'] = str(nth)
         except Exception as e:
             msg = 'Failed to set THREADS %s ' % e
             LOGGER.debug(msg)
-        #-----------------------
+        # -----------------------
 
         # ##### TEMPORAL WORKAROUND! With instaled hdf5-1.8.18 in anaconda ###############
         # ##### MUST be removed after castf90 recompiled with the latest hdf version
@@ -618,12 +620,12 @@ class AnalogsmodelProcess(Process):
             msg = 'CASTf90 failed %s ' % e
             LOGGER.error(msg)
             raise Exception(msg)
-        
+
         LOGGER.debug("castf90 took %s seconds.", time.time() - start_time)
 
         # TODO: Add try - except for pdfs
         if plot == 'Yes':
-            analogs_pdf = analogs.plot_analogs(configfile=config_file)   
+            analogs_pdf = analogs.plot_analogs(configfile=config_file)
         else:
             analogs_pdf = 'dummy_plot.pdf'
             with open(analogs_pdf, 'a'): utime(analogs_pdf, None)
@@ -631,7 +633,7 @@ class AnalogsmodelProcess(Process):
         response.update_status('preparing output', 80)
 
         response.outputs['analog_pdf'].file = analogs_pdf
-        response.outputs['config'].file = config_file # config_output_url  # config_file )
+        response.outputs['config'].file = config_file
         response.outputs['analogs'].file = output_file
         response.outputs['output_netcdf'].file = simulation
         response.outputs['target_netcdf'].file = archive
@@ -641,8 +643,8 @@ class AnalogsmodelProcess(Process):
             response.outputs['sim_netcdf'].file = seasoncyc_sim
         else:
             # TODO: Still unclear how to overpass unknown number of outputs
-            dummy_base='dummy_base.nc'
-            dummy_sim='dummy_sim.nc'
+            dummy_base = 'dummy_base.nc'
+            dummy_sim = 'dummy_sim.nc'
             with open(dummy_base, 'a'): utime(dummy_base, None)
             with open(dummy_sim, 'a'): utime(dummy_sim, None)
             response.outputs['base_netcdf'].file = dummy_base

@@ -28,6 +28,7 @@ ATTRIBUTE_TO_FACETS_MAP = dict(
     driving_model_id='driving_model',
 )
 
+
 def get_files_size(resource):
     """
     Returns total size of the files in resource
@@ -38,6 +39,7 @@ def get_files_size(resource):
     except:
         tot_size = 0
     return tot_size
+
 
 def aggregations(resource):
     """
