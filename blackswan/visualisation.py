@@ -572,7 +572,7 @@ def pdfmerge(pdfs):
         _, mergedpdf = mkstemp(dir='.', suffix='.pdf')
         merger.write(mergedpdf)
     except:
-        LOGGER.excetion('failed to merge pdfs')
+        LOGGER.exception('failed to merge pdfs')
         _, mergedpdf = mkstemp(dir='.', suffix='.pdf')
 
     return mergedpdf
