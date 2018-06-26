@@ -3,12 +3,12 @@ Processes for Weather Classification
 Author: Nils Hempelmann (nils.hempelmann@lsce.ipsl.fr)
 """
 
-from flyingpigeon.datafetch import _PRESSUREDATA_
-from flyingpigeon.weatherregimes import _TIMEREGIONS_
-from flyingpigeon import weatherregimes as wr
-from flyingpigeon.utils import archive, archiveextract
-from flyingpigeon.utils import rename_complexinputs
-from flyingpigeon.utils import download, get_time
+from blackswan.datafetch import _PRESSUREDATA_
+from blackswan.weatherregimes import _TIMEREGIONS_
+from blackswan import weatherregimes as wr
+from blackswan.utils import archive, archiveextract
+from blackswan.utils import rename_complexinputs
+from blackswan.utils import download, get_time
 from os.path import abspath
 from datetime import datetime as dt
 from tempfile import mkstemp
@@ -18,7 +18,7 @@ from pywps import LiteralInput
 from pywps import ComplexInput, ComplexOutput
 from pywps import Format, FORMATS
 from pywps.app.Common import Metadata
-from flyingpigeon.log import init_process_logger
+from blackswan.log import init_process_logger
 
 import logging
 LOGGER = logging.getLogger("PYWPS")
@@ -186,8 +186,8 @@ class WeatherregimesprojectionProcess(Process):
         ##########################################################
         # from flyingpigeon.weatherregimes import get_level
         try:
-            from flyingpigeon.ocgis_module import call
-            from flyingpigeon.utils import get_variable
+            from blackswan.ocgis_module import call
+            from blackswan.utils import get_variable
             time_range = [start, end]
 
             variable = get_variable(resource)
@@ -231,7 +231,7 @@ class WeatherregimesprojectionProcess(Process):
 
         import shlex
         import subprocess
-        from flyingpigeon import config
+        from blackswan import config
         from os.path import curdir, exists, join
 
         try:

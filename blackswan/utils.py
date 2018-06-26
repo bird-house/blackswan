@@ -583,7 +583,7 @@ def get_frequency(resource):
 
 def get_index_lat(resource, variable=None):
     """
-    returns the dimension index of the latiude values
+    returns the dimension index of the latitude values
 
     :param resource:  list of path(s) to netCDF file(s) of one Dataset
     :param variable: variable name
@@ -611,6 +611,39 @@ def get_index_lat(resource, variable=None):
         index = dims.index('latitude')
     if 'y' in dims:
         index = dims.index('y')
+    return index
+
+
+def get_index_lon(resource, variable=None):
+    """
+    returns the dimension index of the longitude values
+
+    :param resource:  list of path(s) to netCDF file(s) of one Dataset
+    :param variable: variable name
+
+    :return int: index
+    """
+
+    if variable is None:
+        variable = get_variable(resource)
+    if type(resource) != list:
+        resource = [resource]
+    if len(resource) == 1:
+        ds = Dataset(resource[0])
+    else:
+        ds = MFDataset(resource)
+
+    var = ds.variables[variable]
+    dims = list(var.dimensions)
+
+    if 'rlon' in dims:
+        index = dims.index('rlon')
+    if 'lon' in dims:
+        index = dims.index('lon')
+    if 'longitude' in dims:
+        index = dims.index('longitude')
+    if 'x' in dims:
+        index = dims.index('x')
     return index
 
 
