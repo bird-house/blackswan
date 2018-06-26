@@ -80,6 +80,24 @@ def pdf_from_analog(lon, lat, data, vmin, vmax, Nlin=30, domain=[-80,50,20,70], 
     return pdffilename
 
 
+def pdf_from_ld(x, y, n_set=50, output='ld_dist.pdf'):
+    fig = plt.figure()
+    fig.set_size_inches(18.5, 10.5, forward=True)
+    xedges, yedges = np.linspace(0, 25, n_set), np.linspace(0, 1, n_set)
+    hist, xedges, yedges = np.histogram2d(x, y, (xedges, yedges))
+    xidx = np.clip(np.digitize(x, xedges), 0, hist.shape[0]-1)
+    yidx = np.clip(np.digitize(y, yedges), 0, hist.shape[1]-1)
+
+    c = hist[xidx, yidx]
+    plt.scatter(x, y, c=c, cmap='jet')
+
+    pdffilename = output
+    plt.savefig(pdffilename)
+    fig.clf()
+    plt.close(fig)
+    return pdffilename
+
+
 def get_configfile(files,
                    seasoncyc_base=None,
                    seasoncyc_sim=None,
