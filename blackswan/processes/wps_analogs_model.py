@@ -1,16 +1,16 @@
-import os
+# import os
 from os import path, environ, utime, getuid
 from tempfile import mkstemp
 from datetime import datetime as dt
 # from datetime import timedelta as td
 from datetime import time as dt_time
-from datetime import date
+# from datetime import date
 import time  # performance test
 
 # later goes to utils
 from netCDF4 import Dataset
 
-from blackswan.datafetch import _PRESSUREDATA_
+# from blackswan.datafetch import _PRESSUREDATA_
 from blackswan import analogs
 from blackswan.ocgis_module import call
 from blackswan.datafetch import get_level
