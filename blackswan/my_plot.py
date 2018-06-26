@@ -5,6 +5,8 @@ use('Agg')
 from matplotlib import pyplot as plt
 from matplotlib.cm import get_cmap
 
+plt.switch_backend('agg')
+
 import cartopy.crs as ccrs
 import numpy as np
 from netCDF4 import Dataset
