@@ -454,6 +454,8 @@ class LocaldimsReaProcess(Process):
         ld_pdf = analogs.pdf_from_ld(x=l_dist, y=l_theta)
         #
 
+        res_times=[res_times[i].isoformat().strip().split("T")[0].replace('-','') for i in range(len(res_times))]
+
         # concatenation of values
         concat_vals = column_stack([res_times, l_theta, l_dist])
         savetxt(dim_filename, concat_vals, fmt='%s', delimiter=',')

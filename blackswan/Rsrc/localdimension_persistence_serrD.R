@@ -41,7 +41,7 @@ if(length(args)>0){
     fname = paste(DATdir,varname,".",yr1,"-",yr2,"_",region,".nc",sep="")
 }
 
-## open netCDF
+# open netCDF
 nc = nc_open(fname)
 data=ncvar_get(nc,varname)
 lon=ncvar_get(nc,lonname)
@@ -59,15 +59,15 @@ nc_close(nc)
 # closing netcdf
 print(paste("Processing",fname))
 
-#Quantile definition
+# Quantile definition
 quanti=0.98
 npoints=nrow(dat)
 dim=numeric(npoints)
 theta=numeric(npoints)
 
-#ptm <- proc.time()
-#dist=pdist2(dat,dat)
-#print(proc.time() - ptm)
+# ptm <- proc.time()
+# dist=pdist2(dat,dat)
+# print(proc.time() - ptm)
 
 # =======================================================
 # Function to calculate dist and theta
@@ -78,13 +78,15 @@ calcmethedist <- function(tmp_x) {
   # which is not good and not modulate
   # But this function is wrapper, so I need 1 arg only
 
-  #tmp_npoints=length(tmp_x)
-  tmp_y=dat
+  # tmp_npoints=length(tmp_x)
+  # tmp_y=dat
+
   tmp_npoints=npoints
   tmp_quanti=quanti
 
   tmp_ress=numeric(2)
-  tmp_distance=pdist2(tmp_x,tmp_y)
+  # tmp_distance=pdist2(tmp_x,tmp_y)
+  tmp_distance=pdist2(tmp_x,dat)
 
   tmp_distance[tmp_distance<1] <- 0
   tmp_logdista=-log(tmp_distance)
@@ -112,17 +114,17 @@ calcmethedist <- function(tmp_x) {
   tmp_ress[1]=tmp_theta
   tmp_logdista=sort(tmp_logdista)
   tmp_findidx=which(tmp_logdista>tmp_thresh)
-  #tmp_logextr=tmp_logdista[tmp_findidx[[1]]:(length(tmp_logdista)-1)]
+  # tmp_logextr=tmp_logdista[tmp_findidx[[1]]:(length(tmp_logdista)-1)]
   tmp_logextr=tmp_logdista[tmp_findidx[[1]]:(length(tmp_logdista))]
   tmp_dim=1/mean(tmp_logextr-tmp_thresh)
   tmp_ress[2]=tmp_dim
-  #print(tmp_ress)
+  # print(tmp_ress)
   return(tmp_ress)
 }
 # =======================================================
 
 
-#may be not needed, did't check yet
+# may be not needed, did't check yet - left for mcapply
 library(parallel)
 
 # need to be installed
@@ -130,12 +132,15 @@ library(parallel)
 library("future.apply")
 plan(multiprocess)
 
-#may be not needed, did't check yet the performance
+# experimental (!!!)
+# uncomment vvv for bigger chunks! but may overload the system
+# options(future.globals.maxSize=1073741824)
+
+# may be not needed, did't check yet the performance
 library(compiler)
 MYcalcmethedist <- cmpfun(calcmethedist)
 
 wrap=lapply(seq_len(nrow(dat)), function(i) dat[i,])
-
 
 # Main Calc
 # TODO NEED UPDATE: there is future_apply now in the latest pack
