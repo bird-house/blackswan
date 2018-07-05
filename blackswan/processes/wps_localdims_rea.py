@@ -114,6 +114,11 @@ class LocaldimsReaProcess(Process):
                           supported_formats=[Format('image/pdf')],
                           as_reference=True,
                           ),
+            ComplexOutput("ld2_pdf", "Scatter plot dims/theta",
+                          abstract="Scatter plot dims/theta",
+                          supported_formats=[Format('image/pdf')],
+                          as_reference=True,
+                          ),
             ComplexOutput('output_log', 'Logging information',
                           abstract="Collected logs during process run.",
                           as_reference=True,
@@ -383,6 +388,8 @@ class LocaldimsReaProcess(Process):
         dim_filename = '%s.txt' % model
         tmp_dim_fn = '%s.txt' % uuid.uuid1()
 
+        Rsrc = config.Rsrc_dir()
+
         if (method == 'Python'):
             try:
                 l_dist, l_theta = localdims(resource=model_subset, variable=var, distance=str(distance))
@@ -392,7 +399,6 @@ class LocaldimsReaProcess(Process):
 
         if (method == 'R'):
             # from os.path import join
-            Rsrc = config.Rsrc_dir()
             Rfile = 'localdimension_persistence_fullD.R'
             args = ['Rscript', os.path.join(Rsrc, Rfile),
                     '%s' % model_subset, '%s' % var,
@@ -419,7 +425,6 @@ class LocaldimsReaProcess(Process):
 
         if (method == 'R_wrap'):
             # from os.path import join
-            Rsrc = config.Rsrc_dir()
             Rfile = 'localdimension_persistence_serrD.R'
             args = ['Rscript', os.path.join(Rsrc, Rfile),
                     '%s' % model_subset, '%s' % var,
@@ -450,7 +455,7 @@ class LocaldimsReaProcess(Process):
             LOGGER.debug('Not standard calendar')
             res_times = analogs.get_time_nc(model_subset)
 
-        # plot
+        # plot 1
         ld_pdf = analogs.pdf_from_ld(x=l_dist, y=l_theta)
         #
 
@@ -460,11 +465,31 @@ class LocaldimsReaProcess(Process):
         concat_vals = column_stack([res_times, l_theta, l_dist])
         savetxt(dim_filename, concat_vals, fmt='%s', delimiter=',')
 
+        # -------------------------- plot with R ---------------
+        R_plot_file = 'plot_csv.R'
+        ld2_pdf = 'local_dims.pdf'
+        args = ['Rscript', os.path.join(Rsrc, R_plot_file),
+                '%s' % dim_filename,
+                '%s' % ld2_pdf]
+        try:
+            output, error = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+            LOGGER.info('R outlog info:\n %s ' % output)
+            LOGGER.exception('R outlog errors:\n %s ' % error)
+            if len(output) > 0:
+                response.update_status('**** Plot with R suceeded', 70)
+            else:
+                LOGGER.exception('NO! output returned from R call')
+        except:
+            msg = 'Could not produce plot'
+            LOGGER.exception(msg)
+            # TODO: Here need produce empty pdf to pass to output
+        # 
         # ====================================================
 
-        response.update_status('preparing output', 70)
+        response.update_status('preparing output', 80)
         response.outputs['ldist'].file = dim_filename
         response.outputs['ld_pdf'].file = ld_pdf
+        response.outputs['ld2_pdf'].file = ld2_pdf
 
         response.update_status('execution ended', 100)
         LOGGER.debug("total execution took %s seconds.",
