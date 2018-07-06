@@ -22,7 +22,8 @@ from blackswan.utils import rename_complexinputs
 from blackswan.utils import archiveextract
 from blackswan.utils import get_timerange, get_calendar
 
-from blackswan.calculation import localdims
+#from blackswan.calculation import localdims
+from blackswan.localdims import localdims, localdims_par
 
 from pywps import Process
 from pywps import LiteralInput, LiteralOutput
@@ -102,7 +103,7 @@ class LocaldimsModProcess(Process):
                          data_type='string',
                          min_occurs=0,
                          max_occurs=1,
-                         allowed_values=['Python', 'R', 'R_wrap']
+                         allowed_values=['Python', 'Python_wrap', 'R', 'R_wrap']
                          ),
         ]
 
@@ -395,6 +396,13 @@ class LocaldimsModProcess(Process):
         if (method == 'Python'):
             try:
                 l_dist, l_theta = localdims(resource=res_tmp, variable=variable, distance=str(distance))
+                response.update_status('**** Dims with Python suceeded', 60)
+            except:
+                LOGGER.exception('NO! output returned from Python call')
+
+        if (method == 'Python_wrap'):
+            try:
+                l_dist, l_theta = localdims_par(resource=res_tmp, variable=variable, distance=str(distance))
                 response.update_status('**** Dims with Python suceeded', 60)
             except:
                 LOGGER.exception('NO! output returned from Python call')
