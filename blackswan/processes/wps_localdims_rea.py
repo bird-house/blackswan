@@ -25,7 +25,10 @@ from blackswan import config
 from blackswan.utils import rename_complexinputs
 from blackswan.utils import get_variable, get_time
 from blackswan.utils import get_files_size
-from blackswan.calculation import localdims
+
+#from blackswan.calculation import localdims, localdims_par
+from blackswan.localdims import localdims, localdims_par
+
 from blackswan.log import init_process_logger
 
 import logging
@@ -98,7 +101,7 @@ class LocaldimsReaProcess(Process):
                          data_type='string',
                          min_occurs=0,
                          max_occurs=1,
-                         allowed_values=['Python', 'R', 'R_wrap']
+                         allowed_values=['Python', 'Python_wrap', 'R', 'R_wrap']
                          ),
         ]
 
@@ -393,6 +396,13 @@ class LocaldimsReaProcess(Process):
         if (method == 'Python'):
             try:
                 l_dist, l_theta = localdims(resource=model_subset, variable=var, distance=str(distance))
+                response.update_status('**** Dims with Python suceeded', 60)
+            except:
+                LOGGER.exception('NO! output returned from Python call')
+
+        if (method == 'Python_wrap'):
+            try:
+                l_dist, l_theta = localdims_par(resource=model_subset, variable=var, distance=str(distance))
                 response.update_status('**** Dims with Python suceeded', 60)
             except:
                 LOGGER.exception('NO! output returned from Python call')
