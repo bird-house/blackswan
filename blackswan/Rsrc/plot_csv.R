@@ -48,6 +48,8 @@ myPlot<-ggplot(data=df,aes(x,y)) +
   stat_density2d(aes(fill=..level..,alpha=..level..),geom='polygon',colour='black') + 
   scale_fill_continuous(low="green",high="red") +
   guides(alpha="none") +
-  commonTheme
+  commonTheme +
+  xlim(0, 26) + 
+  ylim(0.3,0.9)
 
 ggsave(filename=foutname, plot=myPlot, dpi=300, width = 35, height = 20, units = "cm")
