@@ -15,7 +15,7 @@ CPU_ARCH := $(shell uname -m 2>/dev/null || uname -p 2>/dev/null || echo "unknow
 # Python
 SETUPTOOLS_VERSION := 36.5.0
 CONDA_VERSION := 4.5
-BUILDOUT_VERSION := 2.11
+BUILDOUT_VERSION := 2.11.2
 
 # Anaconda
 ANACONDA_HOME ?= $(HOME)/anaconda
@@ -186,7 +186,7 @@ sysinstall:
 .PHONY: install
 install: bootstrap
 	@echo "Installing application with buildout ..."
-	@-bash -c "source $(ANACONDA_HOME)/bin/activate $(CONDA_ENV);bin/buildout buildout:anaconda-home=$(ANACONDA_HOME) -c custom.cfg"
+	@-bash -c "source $(ANACONDA_HOME)/bin/activate $(CONDA_ENV);bin/buildout buildout:anaconda-home=$(ANACONDA_HOME) -c custom.cfg; R CMD BATCH Rconfig.R"
 	@echo "\nStart service with \`make start'"
 
 .PHONY: post-install
