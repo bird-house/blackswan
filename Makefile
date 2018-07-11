@@ -186,7 +186,9 @@ sysinstall:
 .PHONY: install
 install: bootstrap
 	@echo "Installing application with buildout ..."
-	@-bash -c "source $(ANACONDA_HOME)/bin/activate $(CONDA_ENV);bin/buildout buildout:anaconda-home=$(ANACONDA_HOME) -c custom.cfg; R CMD BATCH Rconfig.R /dev/tty"
+	@-bash -c "source $(ANACONDA_HOME)/bin/activate $(CONDA_ENV);bin/buildout buildout:anaconda-home=$(ANACONDA_HOME) -c custom.cfg"
+	@echo "\nInstalling R library not available in conda\n"
+	@-bash -c "source $(ANACONDA_HOME)/bin/activate $(CONDA_ENV);echo '.libPaths(\"'${CONDA_ENV_PATH}'/lib/R/library\")' > ${CONDA_ENV_PATH}/lib/R/etc/Rprofile.site ; R CMD BATCH Rconfig.R /dev/tty"
 	@echo "\nStart service with \`make start'"
 
 .PHONY: post-install
