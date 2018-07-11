@@ -15,7 +15,7 @@ CPU_ARCH := $(shell uname -m 2>/dev/null || uname -p 2>/dev/null || echo "unknow
 # Python
 SETUPTOOLS_VERSION := 36.5.0
 CONDA_VERSION := 4.5
-BUILDOUT_VERSION := 2.11
+BUILDOUT_VERSION := 2.11.2
 
 # Anaconda
 ANACONDA_HOME ?= $(HOME)/anaconda
@@ -187,6 +187,8 @@ sysinstall:
 install: bootstrap
 	@echo "Installing application with buildout ..."
 	@-bash -c "source $(ANACONDA_HOME)/bin/activate $(CONDA_ENV);bin/buildout buildout:anaconda-home=$(ANACONDA_HOME) -c custom.cfg"
+	@echo "\nInstalling R library not available in conda\n"
+	@-bash -c "source $(ANACONDA_HOME)/bin/activate $(CONDA_ENV);echo '.libPaths(\"'${CONDA_ENV_PATH}'/lib/R/library\")' > ${CONDA_ENV_PATH}/lib/R/etc/Rprofile.site ; R CMD BATCH Rconfig.R /dev/tty"
 	@echo "\nStart service with \`make start'"
 
 .PHONY: post-install
