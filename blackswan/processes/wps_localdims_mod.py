@@ -25,6 +25,8 @@ from blackswan.utils import get_timerange, get_calendar
 #from blackswan.calculation import localdims
 from blackswan.localdims import localdims, localdims_par
 
+from blackswan.weatherregimes import _TIMEREGIONS_
+
 from pywps import Process
 from pywps import LiteralInput, LiteralOutput
 from pywps import ComplexInput, ComplexOutput
@@ -72,6 +74,15 @@ class LocaldimsModProcess(Process):
                          allowed_values=[1000, 850, 700, 500, 250, 100, 50, 10]
                          ),
 
+            LiteralInput("season", "Time region",
+                         abstract="Select the months to define the time region (all == whole year will be analysed)",
+                         default="DJF",
+                         data_type='string',
+                         min_occurs=1,
+                         max_occurs=1,
+                         allowed_values=_TIMEREGIONS_.keys()
+                         ),
+
             LiteralInput('dateSt', 'Start date of analysis period',
                          data_type='date',
                          abstract='First day of the period to be analysed',
@@ -114,6 +125,11 @@ class LocaldimsModProcess(Process):
                           supported_formats=[Format("text/plain")],
                           as_reference=True,
                           ),
+            ComplexOutput("ldist_seas", "Distances File for selected season (selection from all results)",
+                          abstract="mulit-column text file",
+                          supported_formats=[Format("text/plain")],
+                          as_reference=True,
+                          ),
             ComplexOutput("ld_pdf", "Scatter plot dims/theta",
                           abstract="Scatter plot dims/theta",
                           supported_formats=[Format('image/pdf')],
@@ -121,6 +137,11 @@ class LocaldimsModProcess(Process):
                           ),
             ComplexOutput("ld2_pdf", "Scatter plot dims/theta",
                           abstract="Scatter plot dims/theta",
+                          supported_formats=[Format('image/pdf')],
+                          as_reference=True,
+                          ),
+            ComplexOutput("ld2_seas_pdf", "Scatter plot dims/theta for season",
+                          abstract="Scatter plot dims/theta for season",
                           supported_formats=[Format('image/pdf')],
                           as_reference=True,
                           ),
@@ -176,6 +197,8 @@ class LocaldimsModProcess(Process):
 
             bboxDef = '-20,40,30,70'  # in general format
             # level = 500
+
+            season = request.inputs['season'][0].data
 
             level = request.inputs['level'][0].data
             if (level == 500):
@@ -475,9 +498,26 @@ class LocaldimsModProcess(Process):
         concat_vals = column_stack([res_times, l_theta, l_dist])
         savetxt(dim_filename, concat_vals, fmt='%s', delimiter=',')
 
+        # output season
+        try:
+            seas = _TIMEREGIONS_[season]['month'] # [12, 1, 2]
+        except:
+            seas = [1,2,3,4,5,6,7,8,9,10,11,12]
+        ind = []
+
+        # TODO: change concat_vals[i][0][4:6] to dt_obj.month !!!
+        for i in range(len(res_times)):
+            if (int(concat_vals[i][0][4:6]) in seas[:]):
+                ind.append(i)
+        sf = column_stack([concat_vals[i] for i in ind]).T
+        seas_dim_filename = season + '_' + dim_filename
+        savetxt(seas_dim_filename, sf, fmt='%s', delimiter=',')
+
         # -------------------------- plot with R ---------------
         R_plot_file = 'plot_csv.R'
         ld2_pdf = 'local_dims.pdf'
+        ld2_seas_pdf = season + '_local_dims.pdf'
+
         args = ['Rscript', path.join(Rsrc, R_plot_file),
                 '%s' % dim_filename,
                 '%s' % ld2_pdf]
@@ -485,22 +525,32 @@ class LocaldimsModProcess(Process):
             output, error = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
             LOGGER.info('R outlog info:\n %s ' % output)
             LOGGER.exception('R outlog errors:\n %s ' % error)
-            if len(output) > 0:
-                response.update_status('**** Plot with R suceeded', 70)
-            else:
-                LOGGER.exception('NO! output returned from R call')
         except:
             msg = 'Could not produce plot'
             LOGGER.exception(msg)
             # TODO: Here need produce empty pdf to pass to output
+
+        args = ['Rscript', path.join(Rsrc, R_plot_file),
+                '%s' % seas_dim_filename,
+                '%s' % ld2_seas_pdf]
+        try:
+            output, error = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+            LOGGER.info('R outlog info:\n %s ' % output)
+            LOGGER.exception('R outlog errors:\n %s ' % error)
+        except:
+            msg = 'Could not produce plot'
+            LOGGER.exception(msg)
+            # TODO: Here need produce empty pdf(s) to pass to output
         # 
 
         # ====================================================
         response.update_status('preparing output', 80)
 
         response.outputs['ldist'].file = dim_filename
+        response.outputs['ldist_seas'].file = seas_dim_filename
         response.outputs['ld_pdf'].file = ld_pdf
         response.outputs['ld2_pdf'].file = ld2_pdf
+        response.outputs['ld2_seas_pdf'].file = ld2_seas_pdf
 
         response.update_status('execution ended', 100)
         LOGGER.debug("total execution took %s seconds.",
