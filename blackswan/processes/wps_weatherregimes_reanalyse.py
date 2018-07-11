@@ -66,7 +66,7 @@ class WeatherregimesreanalyseProcess(Process):
                          data_type='string',
                          min_occurs=1,
                          max_occurs=1,
-                         allowed_values=_TIMEREGIONS_.keys()
+                         allowed_values=_TIMEREGIONS_.keys() + ['January','February','March','April','May','June','July','August','September','October','November','December']
                          ),
 
             LiteralInput('BBox', 'Bounding Box',

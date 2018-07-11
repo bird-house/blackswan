@@ -23,6 +23,18 @@ _TIMEREGIONS_ = {'JJA': {'month': [6, 7, 8]},
                  'MAMJJA': {'month': [3, 4, 5, 6, 7, 8]},
                  'all': None}
 
+_MONTHS_ = {'January': {'month': [1]},
+            'February': {'month': [2]},
+            'March': {'month': [3]},
+            'April': {'month': [4]},
+            'May': {'month': [5]},
+            'June': {'month': [6]},
+            'July': {'month': [7]},
+            'August': {'month': [8]},
+            'September': {'month': [9]},
+            'October': {'month': [10]},
+            'November': {'month': [11]},
+            'December': {'month': [12]}}
 
 def _smooth(ts_latlon):
     y = tile(ts_latlon, 3)
@@ -209,7 +221,11 @@ def get_season(nc_file, season='DJF'):
     :returns str: netCDF with time subset
     """
     try:
-        time_region = _TIMEREGIONS_[season]
+        try:
+            time_region = _TIMEREGIONS_[season]
+        except:
+            time_region = _MONTHS_[season]
+
         LOGGER.info('time_region: %s ' % time_region)
         nc_season = call(nc_file, time_region=time_region)
         LOGGER.info('season selection done %s ' % nc_season)
