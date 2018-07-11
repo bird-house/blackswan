@@ -26,7 +26,7 @@ from blackswan.utils import rename_complexinputs
 from blackswan.utils import get_variable, get_time
 from blackswan.utils import get_files_size
 
-from blackswan.weatherregimes import _TIMEREGIONS_
+from blackswan.weatherregimes import _TIMEREGIONS_, _MONTHS_
 
 #from blackswan.calculation import localdims, localdims_par
 from blackswan.localdims import localdims, localdims_par
@@ -77,7 +77,7 @@ class LocaldimsReaProcess(Process):
                          data_type='string',
                          min_occurs=1,
                          max_occurs=1,
-                         allowed_values=_TIMEREGIONS_.keys()
+                         allowed_values=['January','February','March','April','May','June','July','August','September','October','November','December'] + _TIMEREGIONS_.keys()
                          ),
             LiteralInput('dateSt', 'Start date of analysis period',
                          data_type='date',
@@ -498,8 +498,16 @@ class LocaldimsReaProcess(Process):
         # output season
         try:
             seas = _TIMEREGIONS_[season]['month'] # [12, 1, 2]
+            LOGGER.info('Season to grep from TIMEREGIONS: %s ' % season)
+            LOGGER.info('Season N to grep from TIMEREGIONS: %s ' % seas)
         except:
-            seas = [1,2,3,4,5,6,7,8,9,10,11,12]
+            LOGGER.info('No months in TIMEREGIONS, moving to months')
+            try:
+                seas = _MONTHS_[season]['month'] # [1] or [2] or ...
+                LOGGER.info('Season to grep from MONTHS: %s ' % season)
+                LOGGER.info('Season N to grep from MONTHS: %s ' % seas)
+            except:
+                seas = [1,2,3,4,5,6,7,8,9,10,11,12]
         ind = []
 
         # TODO: change concat_vals[i][0][4:6] to dt_obj.month !!!
