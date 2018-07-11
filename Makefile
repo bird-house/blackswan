@@ -186,7 +186,7 @@ sysinstall:
 .PHONY: install
 install: bootstrap
 	@echo "Installing application with buildout ..."
-	@-bash -c "source $(ANACONDA_HOME)/bin/activate $(CONDA_ENV);bin/buildout buildout:anaconda-home=$(ANACONDA_HOME) -c custom.cfg; R CMD BATCH Rconfig.R"
+	@-bash -c "source $(ANACONDA_HOME)/bin/activate $(CONDA_ENV);bin/buildout buildout:anaconda-home=$(ANACONDA_HOME) -c custom.cfg; R CMD BATCH Rconfig.R /dev/tty"
 	@echo "\nStart service with \`make start'"
 
 .PHONY: post-install
