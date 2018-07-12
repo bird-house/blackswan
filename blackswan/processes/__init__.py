@@ -12,6 +12,7 @@ from .wps_pythonanattribution import PythonanattributionProcess
 from .wps_regrsub import Inter_Sub
 from .wps_localdims_rea import LocaldimsReaProcess
 from .wps_localdims_mod import LocaldimsModProcess
+from .wps_farallnat import FARallnatProcess
 processes = [
     WeatherregimesreanalyseProcess(),
     # WeatherregimesprojectionProcess(),
@@ -27,4 +28,5 @@ processes = [
     Inter_Sub(),
     LocaldimsReaProcess(),
     LocaldimsModProcess(),
+    FARallnatProcess(),
 ]
