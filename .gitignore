@@ -84,3 +84,5 @@ testdata.json
 *.out
 
 WS/*
+
+.RData
