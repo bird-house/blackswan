@@ -288,7 +288,7 @@ class LocaldimsReaProcess(Process):
         # Checking memory and dataset size
         model_size = get_files_size(model_nc)
         memory_avail = psutil.virtual_memory().available
-        thrs = 0.5  # 50%
+        thrs = 0.3  # 50%
         if (model_size >= thrs * memory_avail):
             ser_r = True
         else:
