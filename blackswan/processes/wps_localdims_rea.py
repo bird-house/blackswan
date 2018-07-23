@@ -141,6 +141,16 @@ class LocaldimsReaProcess(Process):
                           supported_formats=[Format('image/pdf')],
                           as_reference=True,
                           ),
+            ComplexOutput("ld2_html", "Scatter plot dims/theta as html page",
+                          abstract="Interactive visualization of localdims",
+                          supported_formats=[Format("text/html")],
+                          as_reference=True,
+                          ),
+            ComplexOutput("ld2_seas_html", "Scatter plot dims/theta for season as html page",
+                          abstract="Interactive visualization of localdims",
+                          supported_formats=[Format("text/html")],
+                          as_reference=True,
+                          ),
             ComplexOutput('output_log', 'Logging information',
                           abstract="Collected logs during process run.",
                           as_reference=True,
@@ -519,13 +529,17 @@ class LocaldimsReaProcess(Process):
         savetxt(seas_dim_filename, sf, fmt='%s', delimiter=',')
 
         # -------------------------- plot with R ---------------
+        # '%s.txt' % model
         R_plot_file = 'plot_csv.R'
-        ld2_pdf = 'local_dims.pdf'
-        ld2_seas_pdf = season + '_local_dims.pdf'
+        ld2_pdf = '%s_local_dims.pdf' % model
+        ld2_html = '%s_local_dims.html' % model
+        ld2_seas_pdf = season + '_' + ld2_pdf
+        ld2_seas_html = season + '_' + ld2_html
 
         args = ['Rscript', os.path.join(Rsrc, R_plot_file),
                 '%s' % dim_filename,
-                '%s' % ld2_pdf]
+                '%s' % ld2_pdf,
+                '%s' % ld2_html]
         try:
             output, error = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
             LOGGER.info('R outlog info:\n %s ' % output)
@@ -535,9 +549,11 @@ class LocaldimsReaProcess(Process):
             LOGGER.exception(msg)
             # TODO: Here need produce empty pdf(s) to pass to output
 
+        # TODO check whether remove Rdat.pdf at this step
         args = ['Rscript', os.path.join(Rsrc, R_plot_file),
                 '%s' % seas_dim_filename,
-                '%s' % ld2_seas_pdf]
+                '%s' % ld2_seas_pdf,
+                '%s' % ld2_seas_html]
         try:
             output, error = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
             LOGGER.info('R outlog info:\n %s ' % output)
@@ -555,6 +571,9 @@ class LocaldimsReaProcess(Process):
         response.outputs['ld_pdf'].file = ld_pdf
         response.outputs['ld2_pdf'].file = ld2_pdf
         response.outputs['ld2_seas_pdf'].file = ld2_seas_pdf
+
+        response.outputs['ld2_html'].file = ld2_html
+        response.outputs['ld2_seas_html'].file = ld2_seas_html
 
         response.update_status('execution ended', 100)
         LOGGER.debug("total execution took %s seconds.",
