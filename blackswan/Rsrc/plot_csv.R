@@ -15,10 +15,12 @@ args=(commandArgs(TRUE))
 
 fname=args[1]
 
-if(length(args)>1){
+if(length(args)>2){
     foutname=args[2]
+    html_foutname=args[3]
 }else{
     foutname="local_dims.pdf"
+    html_foutname="local_dims.html"
 }
 
 
@@ -53,3 +55,14 @@ myPlot<-ggplot(data=df,aes(x,y)) +
   ylim(0.3,0.9)
 
 ggsave(filename=foutname, plot=myPlot, dpi=300, width = 35, height = 20, units = "cm")
+
+myPlot2<-ggplot(data=df,aes(x,y)) + 
+  stat_density2d(aes(fill=..level..,alpha=..level..),geom='polygon',colour='black') + 
+  scale_fill_continuous(low="green",high="red") +
+  guides(alpha="none") +
+  geom_point() + commonTheme
+
+library(plotly)
+p <- ggplotly(myPlot2)
+pp=plotly_build(p)
+htmlwidgets::saveWidget(pp, html_foutname)

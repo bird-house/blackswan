@@ -96,8 +96,10 @@ dependencies:
 - r-fields #=8.4 conflicts with r3.3.1 needs 3.2
 - r-gridextra #=2.0.0
 - r-ggplot2
+- r-plotly # interactive plots
 - r-extremes
 - harfbuzz
+- pandoc # for html output for ggplot
 # #- r-cairo#=1.5_9 build in r-base
 ################
 # esgf
