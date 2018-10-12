@@ -1,6 +1,7 @@
 import os
 # from datetime import date
 from datetime import datetime as dt
+from scipy.stats.mstats import mquantiles
 import time  # performance test
 import subprocess
 # from subprocess import CalledProcessError
@@ -117,12 +118,22 @@ class LocaldimsReaProcess(Process):
         outputs = [
 
             ComplexOutput("ldist", "Distances File",
-                          abstract="mulit-column text file",
+                          abstract="multi-column text file",
                           supported_formats=[Format("text/plain")],
                           as_reference=True,
                           ),
             ComplexOutput("ldist_seas", "Distances File for selected season (selection from all results)",
-                          abstract="mulit-column text file",
+                          abstract="multi-column text file",
+                          supported_formats=[Format("text/plain")],
+                          as_reference=True,
+                          ),
+            ComplexOutput("ldist_csv", "Distances File with WR for visualization",
+                          abstract="multi-column csv file with rounded (dim 3) values ",
+                          supported_formats=[Format("text/plain")],
+                          as_reference=True,
+                          ),
+            ComplexOutput("q_csv", "Quantiles",
+                          abstract="multi-column csv file",
                           supported_formats=[Format("text/plain")],
                           as_reference=True,
                           ),
@@ -565,7 +576,51 @@ class LocaldimsReaProcess(Process):
         # 
         # ====================================================
 
+
+        # ========= Prepare csv for d3.js visualizastion =====
+        dim_csv_filename = '%s.csv' % model
+        q_csv_filename = '%s_q.csv' % model
+
+        # TODO: Add quantiles as input parameters
+        q1d = mquantiles(l_dist, 0.15, alphap=0.5, betap=0.5)
+        q2d = mquantiles(l_dist, 0.85, alphap=0.5, betap=0.5)
+        q1t = mquantiles(l_theta, 0.15, alphap=0.5, betap=0.5)
+        q2t = mquantiles(l_theta, 0.85, alphap=0.5, betap=0.5)
+        NAOp = [0]*len(res_times)
+        NAOn = [0]*len(res_times)
+        BLO = [0]*len(res_times)
+        AR = [0]*len(res_times)
+        MIX = [0]*len(res_times)
+
+        for i in range(len(res_times)):
+            if (l_dist[i] < q1d and l_theta[i] > q1t and l_theta[i] < q2t):
+                NAOp[i]=1
+            elif (l_dist[i] > q2d and l_theta[i] > q1t and l_theta[i] < q2t):
+                BLO[i]=1
+            elif (l_theta[i] > q2t and l_dist[i] > q1d and l_dist[i] < q2d):
+                AR[i]=1
+            elif (l_theta[i] < q1t and l_dist[i] > q1d and l_dist[i] < q2d):
+                NAOn[i] = 1
+            else:
+                MIX[i] = 1
+
+        l_theta_tr = [round(x,3) for x in l_theta]
+        l_dist_tr = [round(x,3) for x in l_dist]
+
+        # concat_csv_vals = column_stack([res_times, l_theta, l_dist, NAOp, NAOn, BLO, AR, MIX])
+        concat_csv_vals = column_stack([res_times, l_theta_tr, l_dist_tr, NAOp, NAOn, BLO, AR, MIX])
+        csv_head = 'Time,theta,dim,NAOp,NAOn,BLO,AR,MIX'
+        savetxt(dim_csv_filename, concat_csv_vals, fmt='%s', delimiter=',', header = csv_head)
+
+        q_csv_vals = column_stack([q1d,q2d,q1t,q2t])
+        q_csv_head = 'q1d,q2d,q1t,q2t'
+        savetxt(q_csv_filename, q_csv_vals, fmt='%s', delimiter=',', header = q_csv_head)
+
+        # ====================================================
+
         response.update_status('preparing output', 80)
+        response.outputs['ldist_csv'].file = dim_csv_filename
+        response.outputs['q_csv'].file = q_csv_filename
         response.outputs['ldist'].file = dim_filename
         response.outputs['ldist_seas'].file = seas_dim_filename
         response.outputs['ld_pdf'].file = ld_pdf
