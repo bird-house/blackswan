@@ -1,4 +1,7 @@
-from .wsgi import application
-from .demo import main
+# -*- coding: utf-8 -*-
 
-__version__ = "1.1_dev"
+"""Top-level package for Blackswan."""
+
+from .__version__ import __author__, __email__, __version__
+
+from .wsgi import application

@@ -1,5 +1,13 @@
-Authors
-*******
+=======
+Credits
+=======
 
-Nils Hempelmann <info@nilshempelmann.de>
-Carsten Ehbrecht <ehbrecht@dkrz.de>
+Development Lead
+----------------
+
+* Nikolay Kadygrov <nikolay.kadygrov@ipsl.fr>
+
+Contributors
+------------
+
+None yet. Why not be the first?

@@ -1,41 +1,52 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""The setup script."""
+
 import os
 
 from setuptools import setup, find_packages
 
-version = __import__('blackswan').__version__
 here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, 'README.rst')).read()
 CHANGES = open(os.path.join(here, 'CHANGES.rst')).read()
 
-reqs = [line.strip() for line in open('requirements/deploy.txt')]
+about = {}
+with open(os.path.join(here, 'blackswan', '__version__.py'), 'r') as f:
+    exec(f.read(), about)
+
+reqs = [line.strip() for line in open('requirements.txt')]
 
 classifiers = [
     'Development Status :: 3 - Alpha',
+    'Intended Audience :: Developers',
     'Intended Audience :: Science/Research',
     'Operating System :: MacOS :: MacOS X',
-    'Operating System :: Microsoft :: Windows',
     'Operating System :: POSIX',
     'Programming Language :: Python',
+    'Natural Language :: English',
+    "Programming Language :: Python :: 2",
+    'Programming Language :: Python :: 2.7',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.6',
     'Topic :: Scientific/Engineering :: Atmospheric Science',
+    'License :: OSI Approved :: BSD License',
 ]
 
 setup(name='blackswan',
-      version=version,
-      description='Processes for extreme events',
+      version=about['__version__'],
+      description="WPS processes focussing on extreme weather events assessment",
       long_description=README + '\n\n' + CHANGES,
+      author=about['__author__'],
+      author_email=about['__email__'],
+      url='https://github.com/nkadygrov/blackswan',
       classifiers=classifiers,
-      author='Nils Hempelmann',
-      author_email='nikolay.kadygrov@lsce.ipsl.fr',
-      url='http://blackswan.readthedocs.io/en/latest/',
-      license="http://www.apache.org/licenses/LICENSE-2.0",
-      keywords='wps blackswan pywps ipsl birdhouse conda climate extreme events',
+      license="BSD license",
+      keywords='wps pywps birdhouse blackswan',
       packages=find_packages(),
       include_package_data=True,
-      zip_safe=False,
-      test_suite='blackswan',
       install_requires=reqs,
       entry_points={
           'console_scripts': [
-             'blackswan=blackswan:main',
-          ]},
-      )
+             'blackswan=blackswan.cli:cli',
+          ]},)
