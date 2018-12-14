@@ -3,46 +3,104 @@
 Installation
 ============
 
-The installation uses the Python distribution system `Anaconda <https://www.continuum.io/>`_ to maintain software dependencies.
-If Anaconda is not available, then a minimal Anaconda will be installed during the installation processes in your home directory ``~/anaconda``.
+.. contents::
+    :local:
+    :depth: 1
 
-The installation process setups a conda environment named ``flyingpigeon``. All additional packages and configuration files are put into this conda environment. The location is ``~/.conda/envs/birdhouse``.
+Install from Conda
+------------------
 
-Now, check out the Flying Pigeon code from github and start the installation::
+.. warning::
 
-   $ git clone https://github.com/bird-house/flyingpigeon.git
-   $ cd flyingpigeon
-   $ make clean install
+   TODO: Prepare Conda package.
 
-After successful installation, you need to start the services. All installed files (config etc ...) are below the conda environment ``birdhouse`` which is by default in your home directory ``~/.conda/envs/birdhouse``. Now, start the services::
+Install from GitHub
+-------------------
 
-   $ make start  # starts supervisor services
-   $ make status # shows supervisor status
-
-The deployed WPS service is available on ``http://localhost:8093/wps?service=WPS&version=1.0.0&request=GetCapabilities``.
-
-Check the log files for errors::
-
-   $ tail -f ~/birdhouse/var/log/pywps/flyingpigeon.log
-   $ tail -f ~/birdhouse/var/log/supervisor/flyingpigeon.log
-
-For other install options, run ``make help`` and read the documention for the `Makefile <Bootstrap_>`_.
-
-Using docker-compose
-====================
-
-Start flyingpigeon with docker-compose (docker-compose version > 1.7):
+Check out code from the Blackswan GitHub repo and start the installation:
 
 .. code-block:: sh
 
-   $ docker-compose up
+   $ git clone https://github.com/nkadygrov/blackswan.git
+   $ cd blackswan
+   $ conda env create -f environment.yml
+   $ source activate blackswan
+   $ python setup.py develop
 
-By default the WPS is available on port 8080: ``http://localhost:8080/wps?service=WPS&version=1.0.0&request=GetCapabilities``.
+... or do it the lazy way
++++++++++++++++++++++++++
 
-You can change the ports and hostname with environment variables:
+The previous installation instructions assume you have Anaconda installed.
+We provide also a ``Makefile`` to run this installation without additional steps:
 
 .. code-block:: sh
 
-  $ HOSTNAME=flyingpigeon HTTP_PORT=8093 SUPERVISOR_PORT=48093 docker-compose up
+   $ git clone https://github.com/nkadygrov/blackswan.git
+   $ cd blackswan
+   $ make clean    # cleans up a previous Conda environment
+   $ make install  # installs Conda if necessary and runs the above installation steps
 
-Now the WPS is available on port 8093: ``http://flyingpigeon:8093/wps?service=WPS&version=1.0.0&request=GetCapabilities``.
+Start Blackswan PyWPS service
+-----------------------------
+
+After successful installation you can start the service using the ``blackswan`` command-line.
+
+.. code-block:: sh
+
+   $ blackswan --help # show help
+   $ blackswan start  # start service with default configuration
+
+   OR
+
+   $ blackswan start --daemon # start service as daemon
+   loading configuration
+   forked process id: 42
+
+The deployed WPS service is by default available on:
+
+http://localhost:5000/wps?service=WPS&version=1.0.0&request=GetCapabilities.
+
+.. NOTE:: Remember the process ID (PID) so you can stop the service with ``kill PID``.
+
+You can find which process uses a given port using the following command (here for port 5000):
+
+.. code-block:: sh
+
+   $ netstat -nlp | grep :5000
+
+
+Check the log files for errors:
+
+.. code-block:: sh
+
+   $ tail -f  pywps.log
+
+... or do it the lazy way
++++++++++++++++++++++++++
+
+You can also use the ``Makefile`` to start and stop the service:
+
+.. code-block:: sh
+
+  $ make start
+  $ make status
+  $ tail -f pywps.log
+  $ make stop
+
+
+Run Blackswan as Docker container
+---------------------------------
+
+You can also run Blackswan as a Docker container.
+
+.. warning::
+
+  TODO: Describe Docker container support.
+
+Use Ansible to deploy Blackswan on your System
+----------------------------------------------
+
+Use the `Ansible playbook`_ for PyWPS to deploy Blackswan on your system.
+
+
+.. _Ansible playbook: http://ansible-wps-playbook.readthedocs.io/en/latest/index.html

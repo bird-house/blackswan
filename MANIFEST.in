@@ -1,3 +1,6 @@
+include Makefile
+include *.txt
 include *.rst
-graft blackswan
-global-exclude *.pyc *.*~
+recursive-include blackswan *
+global-exclude __pycache__
+global-exclude *.py[co]
