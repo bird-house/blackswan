@@ -167,7 +167,8 @@ def reanalyses(start=1948, end=None, variable='slp', dataset='NCEP', timres='day
                 if year == cur_year:
                     # import urlparse
                     from blackswan import config
-                    parsed_url = urlparse.urlparse(url)
+                    # parsed_url = urlparse.urlparse(url)
+                    parsed_url = urlparse(url)
                     cur_filename = path.join(config.cache_path(), parsed_url.netloc, parsed_url.path.strip('/'))
                     if path.exists(cur_filename):
                         fn_time = dt.fromtimestamp(path.getmtime(cur_filename))

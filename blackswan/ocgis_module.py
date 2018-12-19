@@ -283,7 +283,8 @@ def call(resource=[], variable=None, dimension_map=None, agg_selection=True, cal
                 call = [op for op in dir(cdo) if remap in op]
                 cmd = "output = cdo.%s('%s',input='%s', output='%s')" \
                       % (str(call[0]), regrid_destination, geom_file, output)
-                exec cmd
+                exec(cmd)
+                #exec cmd
         except Exception as e:
             LOGGER.debug('failed to remap')
             raise

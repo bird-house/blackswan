@@ -3,8 +3,37 @@ channels:
 - birdhouse
 - conda-forge
 - defaults
+
+# the r hell ...
+# - r
+# - bioconda  # for r-mclust
+
+# ocgis
+# - nesii/label/ocgis-next
+# - nesii/label/dev-esmf
+
 dependencies:
+###### base ##########
 - pywps=4.1
 - jinja2
 - click
 - psutil
+######################
+- numpy
+- ocgis
+- netcdf4
+- scipy
+- statsmodels
+- pandas
+- pypdf2
+#####################
+- matplotlib
+- cartopy
+#####################
+- cdo
+- python-cdo
+- xarray
+###### analogue#####
+- castf90=0.1.5
+####################
+

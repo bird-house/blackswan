@@ -255,7 +255,8 @@ def download(url, cache=False):
     """
     try:
         if cache:
-            parsed_url = urlparse.urlparse(url)
+            # parsed_url = urlparse.urlparse(url)
+            parsed_url = urlparse(url)
             filename = os.path.join(config.cache_path(), parsed_url.netloc, parsed_url.path.strip('/'))
             if os.path.exists(filename):
                 LOGGER.info('file already in cache: %s', os.path.basename(filename))
@@ -448,7 +449,8 @@ def has_variable(resource, variable):
 
 
 def local_path(url):
-    url_parts = urlparse.urlparse(url)
+    #url_parts = urlparse.urlparse(url)
+    url_parts = urlparse(url)
     return url_parts.path
 
 

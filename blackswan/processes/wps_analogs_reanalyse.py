@@ -240,7 +240,7 @@ class AnalogsreanalyseProcess(Process):
             version="0.10",
             metadata=[
                 Metadata('LSCE', 'http://www.lsce.ipsl.fr/en/index.php'),
-                Metadata('Doc', 'http://flyingpigeon.readthedocs.io/en/latest/'),
+                Metadata('Doc', 'http://blackswan.readthedocs.io/en/latest/'),
             ],
             inputs=inputs,
             outputs=outputs,
