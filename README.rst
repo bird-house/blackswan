@@ -18,11 +18,13 @@ Blackswan
     :alt: Join the chat at https://gitter.im/bird-house/birdhouse
 
 
-Blackswan (the bird)
-  *Blackswan is a bird ...*
+Black Swan (the waterbird)
 
-WPS processes focussing on extreme weather events assessment
+Black Swan is a Python package with a collection of algorithms focussing on extreme weather event assessments available as a Web Processing Service (WPS).
 
+Named for the reference to the black swan theory for unexpected extreme events
+
+  *The term is based on an ancient saying which presumed black swans did not exist, but the saying was rewritten after black swans were discovered in the wild. [..].* (`Wikipedia <https://en.wikipedia.org/wiki/Black_swan_theory>`_).
 * Free software: BSD license
 * Documentation: https://blackswan.readthedocs.io.
 
