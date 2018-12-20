@@ -1,4 +1,7 @@
 import os
+
+from os.path import join, abspath, dirname, getsize, curdir, isfile
+
 from datetime import date
 from datetime import datetime as dt
 import time  # performance test
@@ -249,8 +252,16 @@ class AnalogsreanalyseProcess(Process):
         )
 
     def _handler(self, request, response):
+
+        LOGGER.debug('CURDIR XXXX : %s ' % (abspath(curdir)))
+        LOGGER.debug('WORKDIR XXXX : %s ' % (self.workdir))
+        os.chdir(self.workdir)
+        LOGGER.debug('CURDIR XXXX : %s ' % (abspath(curdir)))
+
         init_process_logger('log.txt')
-        response.outputs['output_log'].file = 'log.txt'
+        # init_process_logger(os.path.join(self.workdir, 'log.txt'))
+
+        # response.outputs['output_log'].file = 'log.txt'
 
         LOGGER.info('Start process')
         response.update_status('execution started at : {}'.format(dt.now()), 5)
@@ -678,4 +689,5 @@ class AnalogsreanalyseProcess(Process):
         response.update_status('execution ended', 100)
         LOGGER.debug("total execution took %s seconds.",
                      time.time() - process_start_time)
+        response.outputs['output_log'].file = 'log.txt'
         return response
