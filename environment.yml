@@ -21,7 +21,8 @@ dependencies:
 ######################
 - numpy
 - ocgis
-- netcdf4
+# We use ocgis version of netcdf4
+# - netcdf4
 - scipy
 - statsmodels
 - pandas
@@ -30,7 +31,7 @@ dependencies:
 - matplotlib
 - cartopy
 #####################
-- cdo
+- cdo=1.9.4
 - python-cdo
 - xarray
 ###### analogue#####

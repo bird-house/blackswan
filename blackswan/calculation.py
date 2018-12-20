@@ -12,7 +12,7 @@ import uuid
 
 from scipy.interpolate import UnivariateSpline
 
-from blackswan.config import testdata_path
+# from blackswan.config import testdata_path
 from blackswan.utils import get_values, get_index_lat
 # from blackswan.utils import get_coordinates
 

@@ -351,7 +351,7 @@ def reformat_analogs(analogs, prefix='modified-analogfile.tsv'):
         dfS = pd.read_csv(analogs, delimiter=r"\s+", index_col=0)
 
         # Find number of analogues
-        num_analogues = (dfS.shape[1]) / 3
+        num_analogues = int((dfS.shape[1]) / 3)
         # LOGGER.debug('num_analogues: %s', num_analogues)
 
         # Define temporary df
