@@ -483,7 +483,7 @@ def plot_analogs(configfile='config.txt', simday='all', **kwargs):
             ana = item.split()
             sim_date = dt.strptime(ana[0], '%Y%m%d')
             an_dates = []
-            for dat in ana[1:1+nanalog]: an_dates.append(dt.strptime(dat,'%Y%m%d'))
+            for dat in ana[1:1+nanalog]: an_dates.append(dt.strptime(dat, '%Y%m%d'))
 
             c_dists = ana[1+nanalog:1+2*nanalog]
             c_cors = ana[1+2*nanalog:]
@@ -493,10 +493,13 @@ def plot_analogs(configfile='config.txt', simday='all', **kwargs):
             for i in range(0, nanalog):
                 dists[i] = float(c_dists[i])
                 cors[i] = float(c_cors[i])
-            min_dist = np.min(dists)
-            max_corr = np.max(cors)
-            w_dist = min_dist / dists
-            w_corr = cors / max_corr
+
+            # min_dist = np.min(dists)
+            # max_corr = np.max(cors)
+
+            # weights for futher use
+            # w_dist = min_dist / dists
+            # w_corr = cors / max_corr
 
             sim_index = idx  # day by day
 
@@ -511,13 +514,13 @@ def plot_analogs(configfile='config.txt', simday='all', **kwargs):
                 arc_date_temp = '%s-%s-%s' % (arc.year, arc.month, arc.day)
                 arc_index.append(tmp_i.index(arc_date_temp))
 
-            simmin = np.min(simvar[sim_index,:,:])
-            simmax = np.max(simvar[sim_index,:,:])
+            simmin = np.min(simvar[sim_index, :, :])
+            simmax = np.max(simvar[sim_index, :, :])
 
             # PLOT SIM ====================================
             sim_title = 'Simulation Day: ' + ana[0]
             output_file_name = 'sim_' + ana[0] + '.pdf'
-            output_file = pdf_from_analog(lon=lon, lat=lat, data=simvar[sim_index,:,:],
+            output_file = pdf_from_analog(lon=lon, lat=lat, data=simvar[sim_index, :, :],
                                   vmin=simmin, vmax=simmax, Nlin=Nlin, domain=domain,
                                   output=output_file_name, title=sim_title)
             outlist.append(str(output_file))
@@ -528,8 +531,8 @@ def plot_analogs(configfile='config.txt', simday='all', **kwargs):
             arcvar = arc_dataset.variables[varname][:]
             arc_dataset.close()
 
-            mean_ana = np.zeros((len(arcvar[0,:,0]), len(arcvar[0,0,:])), dtype=float)
-            for ida, art in enumerate(arc_index): mean_ana = mean_ana + arcvar[art,:,:]
+            mean_ana = np.zeros((len(arcvar[0, :, 0]), len(arcvar[0, 0, :])), dtype=float)
+            for ida, art in enumerate(arc_index): mean_ana = mean_ana + arcvar[art, :, :]
             mean_ana = mean_ana / nanalog
 
             output_an_file_name = 'ana_' + ana[0] + '.pdf'
@@ -563,15 +566,16 @@ def plot_analogs(configfile='config.txt', simday='all', **kwargs):
             max_c_index = np.argmax(cors)
 
             output_bcan_file_name = 'bcana_' + ana[0] + '.pdf'  # PDF!!
-            bcan_title = 'Analog with max corr for sim Day ' + ana[0] + ' is: ' + ana[1+max_c_index]
+            bcan_title = 'Analog with max corr for sim Day ' + ana[0] + ' is: ' + ana[1 + max_c_index]
             bcan_output_file = pdf_from_analog(lon=lon, lat=lat, data=arcvar[arc_index[max_c_index]],
                                           vmin=simmin, vmax=simmax, Nlin=Nlin, domain=domain,
                                           output=output_bcan_file_name, title=bcan_title)
             outlist.append(str(bcan_output_file))
 
             output_wcan_file_name = 'wcana_' + ana[0] + '.pdf'  # PDF!!
-            wcan_title = 'Analog with min corr for sim Day ' + ana[0] + ' is: ' + ana[1+min_c_index]
-            wcan_output_file = pdf_from_analog(lon=lon, lat=lat, data=arcvar[arc_index[min_c_index]],
+            wcan_title = 'Analog with min corr for sim Day ' + ana[0] + ' is: ' + ana[1 + min_c_index]
+            wcan_output_file = pdf_from_analog(
+                                          lon=lon, lat=lat, data=arcvar[arc_index[min_c_index]],
                                           vmin=simmin, vmax=simmax, Nlin=Nlin, domain=domain,
                                           output=output_wcan_file_name, title=wcan_title)
             outlist.append(str(wcan_output_file))
