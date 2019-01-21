@@ -14,13 +14,14 @@ channels:
 
 dependencies:
 ###### base ##########
-- pywps=4.1
+- pywps=4.2
 - jinja2
 - click
 - psutil
 ######################
 - numpy
 - ocgis
+- gdal=2.4
 # We use ocgis version of netcdf4
 # - netcdf4
 - scipy
@@ -31,10 +32,11 @@ dependencies:
 - matplotlib
 - cartopy
 #####################
-- cdo=1.9.4
+- cdo #=1.9.4
 - python-cdo
 - xarray
 ###### analogue#####
-- castf90=0.1.5
+#- castf90=0.1.5
 ####################
-
+- pip:
+  - -e git+https://github.com/NCPP/ocgis#egg=owslib
