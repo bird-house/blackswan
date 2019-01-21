@@ -4,9 +4,10 @@
 # Docker
 #Dockerfile
 
-# custom configs
+# PyWPS 
 custom.cfg
-Makefile.config
+.custom.cfg
+*.pid
 
 # Python / Extensions etc.
 *~
@@ -69,6 +70,7 @@ docs/build/
 # External Sources
 #src/external
 src/
+
 # tests
 *.log
 *.lock
@@ -82,7 +84,3 @@ testdata.json
 *.a
 *.mod
 *.out
-
-WS/*
-
-.RData

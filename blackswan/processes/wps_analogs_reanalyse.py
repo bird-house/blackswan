@@ -1,4 +1,7 @@
 import os
+
+from os.path import join, abspath, dirname, getsize, curdir, isfile
+
 from datetime import date
 from datetime import datetime as dt
 import time  # performance test
@@ -16,15 +19,16 @@ from pywps import LiteralInput, LiteralOutput
 from pywps import ComplexInput, ComplexOutput
 from pywps import Format, FORMATS
 from pywps.app.Common import Metadata
-from pywps.inout.storage import FileStorage
+# from pywps.inout.storage import FileStorage
 
 from blackswan.datafetch import _PRESSUREDATA_
 from blackswan.datafetch import reanalyses as rl
 from blackswan.ocgis_module import call
 from blackswan import analogs
-from blackswan.utils import rename_complexinputs
-from blackswan.utils import get_variable
-from blackswan.utils import get_files_size
+
+# from blackswan.utils import rename_complexinputs
+from blackswan.utils import get_variable, get_files_size
+
 from blackswan.calculation import remove_mean_trend
 from blackswan.log import init_process_logger
 
@@ -239,7 +243,7 @@ class AnalogsreanalyseProcess(Process):
             version="0.10",
             metadata=[
                 Metadata('LSCE', 'http://www.lsce.ipsl.fr/en/index.php'),
-                Metadata('Doc', 'http://flyingpigeon.readthedocs.io/en/latest/'),
+                Metadata('Doc', 'http://blackswan.readthedocs.io/en/latest/'),
             ],
             inputs=inputs,
             outputs=outputs,
@@ -248,8 +252,16 @@ class AnalogsreanalyseProcess(Process):
         )
 
     def _handler(self, request, response):
+
+        LOGGER.debug('CURDIR XXXX : %s ' % (abspath(curdir)))
+        LOGGER.debug('WORKDIR XXXX : %s ' % (self.workdir))
+        os.chdir(self.workdir)
+        LOGGER.debug('CURDIR XXXX : %s ' % (abspath(curdir)))
+
         init_process_logger('log.txt')
-        response.outputs['output_log'].file = 'log.txt'
+        # init_process_logger(os.path.join(self.workdir, 'log.txt'))
+
+        # response.outputs['output_log'].file = 'log.txt'
 
         LOGGER.info('Start process')
         response.update_status('execution started at : {}'.format(dt.now()), 5)
@@ -390,7 +402,7 @@ class AnalogsreanalyseProcess(Process):
             raise Exception(msg)
 
         response.update_status('subsetting region of interest', 10)
-        # from flyingpigeon.weatherregimes import get_level
+
         LOGGER.debug("start and end time: %s - %s" % (start, end))
         time_range = [start, end]
 
@@ -458,24 +470,28 @@ class AnalogsreanalyseProcess(Process):
         # If dataset is 20CRV2 the 6 hourly file should be converted to daily.
         # Option to use previously 6h data from cache (if any) and not download daily files.
 
-        if '20CRV2' in model:
-            if timres == '6h':
-                from cdo import Cdo
+        # Disabled for now
+        # if '20CRV2' in model:
+        #     if timres == '6h':
+        #         from cdo import Cdo
 
-                cdo = Cdo(env=os.environ)
-                model_subset = '%s.nc' % uuid.uuid1()
-                tmp_f = '%s.nc' % uuid.uuid1()
+        #         cdo = Cdo(env=os.environ)
+        #         model_subset = '%s.nc' % uuid.uuid1()
+        #         tmp_f = '%s.nc' % uuid.uuid1()
 
-                cdo_op = getattr(cdo, 'daymean')
-                cdo_op(input=model_subset_tmp, output=tmp_f)
-                sti = '00:00:00'
-                cdo_op = getattr(cdo, 'settime')
-                cdo_op(sti, input=tmp_f, output=model_subset)
-                LOGGER.debug('File Converted from: %s to daily' % (timres))
-            else:
-                model_subset = model_subset_tmp
-        else:
-            model_subset = model_subset_tmp
+        #         cdo_op = getattr(cdo, 'daymean')
+        #         cdo_op(input=model_subset_tmp, output=tmp_f)
+        #         sti = '00:00:00'
+        #         cdo_op = getattr(cdo, 'settime')
+        #         cdo_op(sti, input=tmp_f, output=model_subset)
+        #         LOGGER.debug('File Converted from: %s to daily' % (timres))
+        #     else:
+        #         model_subset = model_subset_tmp
+        # else:
+        #     model_subset = model_subset_tmp
+
+        # Remove \/\/\/ if work with 6h data...
+        model_subset = model_subset_tmp
 
         LOGGER.info('Dataset subset done: %s ', model_subset)
 
@@ -673,4 +689,5 @@ class AnalogsreanalyseProcess(Process):
         response.update_status('execution ended', 100)
         LOGGER.debug("total execution took %s seconds.",
                      time.time() - process_start_time)
+        response.outputs['output_log'].file = 'log.txt'
         return response

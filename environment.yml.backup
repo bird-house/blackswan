@@ -1,0 +1,10 @@
+name: blackswan
+channels:
+- birdhouse
+- conda-forge
+- defaults
+dependencies:
+- pywps=4.1
+- jinja2
+- click
+- psutil

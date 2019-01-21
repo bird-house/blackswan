@@ -4,22 +4,22 @@ from blackswan import config
 import logging
 LOGGER = logging.getLogger("PYWPS")
 
-
-def has_Lambert_Conformal(resource):
-    """
-    Check if grid is organised as Lambert_Conformal
-
-    :param resource: file to be checked
-
-    :return Boolean: True/False
-    """
-    if type(resource) != list:
-        resource = [resource]
-    for nc in resource:
-        ds = Dataset(nc)
-        if 'Lambert_Conformal' not in ds.variables.keys():
-            return False
-    return True
+# == eggshell ==
+# def has_Lambert_Conformal(resource):
+#     """
+#     Check if grid is organised as Lambert_Conformal
+# 
+#     :param resource: file to be checked
+# 
+#     :return Boolean: True/False
+#     """
+#     if type(resource) != list:
+#         resource = [resource]
+#     for nc in resource:
+#         ds = Dataset(nc)
+#         if 'Lambert_Conformal' not in ds.variables.keys():
+#             return False
+#     return True
 
 
 def call(resource=[], variable=None, dimension_map=None, agg_selection=True, calc=None,
@@ -172,7 +172,7 @@ def call(resource=[], variable=None, dimension_map=None, agg_selection=True, cal
     #
     # try:
     #     from numpy import sqrt
-    #     from flyingpigeon.utils import FreeMemory
+    #     from blackswan.utils import FreeMemory
     #
     #     if memory_limit is None:
     #         f = FreeMemory()
@@ -283,7 +283,8 @@ def call(resource=[], variable=None, dimension_map=None, agg_selection=True, cal
                 call = [op for op in dir(cdo) if remap in op]
                 cmd = "output = cdo.%s('%s',input='%s', output='%s')" \
                       % (str(call[0]), regrid_destination, geom_file, output)
-                exec cmd
+                exec(cmd)
+                #exec cmd
         except Exception as e:
             LOGGER.debug('failed to remap')
             raise
@@ -292,46 +293,47 @@ def call(resource=[], variable=None, dimension_map=None, agg_selection=True, cal
         output = geom_file
 
     # try:
-    #     from flyingpigeon.utils import unrotate_pole
+    #     from blackswan.utils import unrotate_pole
     #     lat, lon = unrotate_pole(output)
     # except:
     #     LOGGER.exception('failed to unrotate pole')
     return output
 
+# == eggshell ==
+# def eval_timerange(resource, time_range):
+#     """
+#     quality checker if given time_range is covered by timesteps in resource files
+# 
+#     :param resource: input netCDF files
+#     :param time_range: start and end date of time range [datetime,datetime]
+# 
+#     :returns [datetime,datetime]: time_range
+#     """
+#     from blackswan.utils import get_time
+# 
+#     LOGGER.info('time_range: %s' % time_range)
+# 
+#     if type(resource) != str:
+#         resource.sort()
+#     time = get_time(resource)
+#     start = time[0]
+#     end = time[-1]
+# 
+#     if (time_range[0] > start or time_range[0] < end):
+#         LOGGER.debug('time range start %s not in input dataset covering: %s to %s' % (time_range[0], start, end))
+#         time_range[0] = start
+#     LOGGER.debug('time_range start changed to first timestep of dataset')
+#     if (time_range[1] > end or time_range[1] < start):
+#         LOGGER.debug('time range end %s not in input dataset covering: %s to %s' % (time_range[0], start, end))
+#         time_range[1] = end
+#     LOGGER.debug('time_range end changed to last timestep of dataset')
+#     if (time_range[0] > time_range[1]):
+#         time_range = reversed(time_range)
+#         LOGGER.debug('time range reversed! start was later than end ')
+#     LOGGER.info('time range start and end set')
+#     return time_range
 
-def eval_timerange(resource, time_range):
-    """
-    quality checker if given time_range is covered by timesteps in resource files
-
-    :param resource: input netCDF files
-    :param time_range: start and end date of time range [datetime,datetime]
-
-    :returns [datetime,datetime]: time_range
-    """
-    from blackswan.utils import get_time
-
-    LOGGER.info('time_range: %s' % time_range)
-
-    if type(resource) != str:
-        resource.sort()
-    time = get_time(resource)
-    start = time[0]
-    end = time[-1]
-
-    if (time_range[0] > start or time_range[0] < end):
-        LOGGER.debug('time range start %s not in input dataset covering: %s to %s' % (time_range[0], start, end))
-        time_range[0] = start
-    LOGGER.debug('time_range start changed to first timestep of dataset')
-    if (time_range[1] > end or time_range[1] < start):
-        LOGGER.debug('time range end %s not in input dataset covering: %s to %s' % (time_range[0], start, end))
-        time_range[1] = end
-    LOGGER.debug('time_range end changed to last timestep of dataset')
-    if (time_range[0] > time_range[1]):
-        time_range = reversed(time_range)
-        LOGGER.debug('time range reversed! start was later than end ')
-    LOGGER.info('time range start and end set')
-    return time_range
-
+# == eggshell == obsolete ?
 # # check memory load
 # from os import stat
 #   if memory_limit == None:

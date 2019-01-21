@@ -1,5 +1,4 @@
 import six
-import urlparse
 import os
 import requests
 import shutil
@@ -9,10 +8,17 @@ from ocgis import RequestDataset  # does not support NETCDF4
 from netCDF4 import Dataset, num2date
 from netCDF4 import MFDataset  # does not support NETCDF4
 
-from pyesgf.search.connection import SearchConnection
-from pyesgf.search import TYPE_FILE
+# for land-sea-mask. disabled here.
+# from pyesgf.search.connection import SearchConnection
+# from pyesgf.search import TYPE_FILE
 
 from blackswan import config
+
+# python 2.7 - 3.#
+try:
+    import urlparse
+except ImportError:
+    from urllib.parse import urlparse
 
 import logging
 LOGGER = logging.getLogger("PYWPS")
@@ -20,13 +26,14 @@ LOGGER = logging.getLogger("PYWPS")
 GROUPING = ["day", "mon", "sem", "yr", "ONDJFM", "AMJJAS", "DJF", "MAM", "JJA", "SON",
             "Jan", 'Feb', "Mar", "Apr", "May", "Jun", 'Jul', "Aug", 'Sep', 'Oct', 'Nov', 'Dec']
 
-ATTRIBUTE_TO_FACETS_MAP = dict(
-    project_id='project',
-    experiment='experiment',
-    CORDEX_domain='domain',
-    institute_id='institute',
-    driving_model_id='driving_model',
-)
+# == eggshell ==
+# ATTRIBUTE_TO_FACETS_MAP = dict(
+#     project_id='project',
+#     experiment='experiment',
+#     CORDEX_domain='domain',
+#     institute_id='institute',
+#     driving_model_id='driving_model',
+# )
 
 
 def get_files_size(resource):
@@ -40,121 +47,122 @@ def get_files_size(resource):
         tot_size = 0
     return tot_size
 
+# == eggshell ==
+# def aggregations(resource):
+#     """
+#     aggregates netcdf files by experiment. Aggregation examples:
 
-def aggregations(resource):
-    """
-    aggregates netcdf files by experiment. Aggregation examples:
+#     CORDEX: EUR-11_ICHEC-EC-EARTH_historical_r3i1p1_DMI-HIRHAM5_v1_day
+#     CMIP5:
+#     We collect for each experiment all files on the time axis:
+#     200101-200512, 200601-201012, ...
 
-    CORDEX: EUR-11_ICHEC-EC-EARTH_historical_r3i1p1_DMI-HIRHAM5_v1_day
-    CMIP5:
-    We collect for each experiment all files on the time axis:
-    200101-200512, 200601-201012, ...
+#     Time axis is sorted by time.
 
-    Time axis is sorted by time.
+#     :param resource: list of netcdf files
 
-    :param resource: list of netcdf files
+#     :return: dictionary with key=experiment
+#     """
 
-    :return: dictionary with key=experiment
-    """
+#     aggregations = {}
+#     for nc in resource:
+#         key = drs_filename(nc, skip_timestamp=True, skip_format=True)
 
-    aggregations = {}
-    for nc in resource:
-        key = drs_filename(nc, skip_timestamp=True, skip_format=True)
+#         # collect files of each aggregation (time axis)
+#         if key in aggregations:
+#             aggregations[key]['files'].append(nc)
+#         else:
+#             aggregations[key] = dict(files=[nc])
 
-        # collect files of each aggregation (time axis)
-        if key in aggregations:
-            aggregations[key]['files'].append(nc)
-        else:
-            aggregations[key] = dict(files=[nc])
-
-    # collect aggregation metadata
-    for key in aggregations.keys():
-        # sort files by time
-        aggregations[key]['files'] = sort_by_time(aggregations[key]['files'])
-        # start timestamp of first file
-        start, _ = get_timerange(aggregations[key]['files'][0])
-        # end timestamp of last file
-        _, end = get_timerange(aggregations[key]['files'][-1])
-        aggregations[key]['from_timestamp'] = start
-        aggregations[key]['to_timestamp'] = end
-        aggregations[key]['start_year'] = int(start[0:4])
-        aggregations[key]['end_year'] = int(end[0:4])
-        aggregations[key]['variable'] = get_variable(aggregations[key]['files'][0])
-        aggregations[key]['filename'] = "%s_%s-%s.nc" % (key, start, end)
-    return aggregations
+#     # collect aggregation metadata
+#     for key in aggregations.keys():
+#         # sort files by time
+#         aggregations[key]['files'] = sort_by_time(aggregations[key]['files'])
+#         # start timestamp of first file
+#         start, _ = get_timerange(aggregations[key]['files'][0])
+#         # end timestamp of last file
+#         _, end = get_timerange(aggregations[key]['files'][-1])
+#         aggregations[key]['from_timestamp'] = start
+#         aggregations[key]['to_timestamp'] = end
+#         aggregations[key]['start_year'] = int(start[0:4])
+#         aggregations[key]['end_year'] = int(end[0:4])
+#         aggregations[key]['variable'] = get_variable(aggregations[key]['files'][0])
+#         aggregations[key]['filename'] = "%s_%s-%s.nc" % (key, start, end)
+#     return aggregations
 
 
-def archive(resources, format='tar', dir_output='.', mode='w'):
-    """
-    compresses a list of files into an archive
+# == eggshell ==
+# def archive(resources, format='tar', dir_output='.', mode='w'):
+#     """
+#     compresses a list of files into an archive
 
-    :param resources: list of files to be stored in archive
-    :param format: archive format. Options: tar (default), zip
-    :param dir_output: path to output folder (default current directory)
-    :param mode: for format='tar':
-                  'w' or 'w:'  open for writing without compression
-                  'w:gz'       open for writing with gzip compression
-                  'w:bz2'      open for writing with bzip2 compression
-                  'w|'         open an uncompressed stream for writing
-                  'w|gz'       open a gzip compressed stream for writing
-                  'w|bz2'      open a bzip2 compressed stream for writing
+#     :param resources: list of files to be stored in archive
+#     :param format: archive format. Options: tar (default), zip
+#     :param dir_output: path to output folder (default current directory)
+#     :param mode: for format='tar':
+#                   'w' or 'w:'  open for writing without compression
+#                   'w:gz'       open for writing with gzip compression
+#                   'w:bz2'      open for writing with bzip2 compression
+#                   'w|'         open an uncompressed stream for writing
+#                   'w|gz'       open a gzip compressed stream for writing
+#                   'w|bz2'      open a bzip2 compressed stream for writing
 
-                  for foramt='zip':
-                  read "r", write "w" or append "a"
+#                   for foramt='zip':
+#                   read "r", write "w" or append "a"
 
-    :return str: archive path/filname.ext
-    """
-    from tempfile import mkstemp
-    from os.path import basename
+#     :return str: archive path/filname.ext
+#     """
+#     from tempfile import mkstemp
+#     from os.path import basename
 
-    LOGGER.info('compressing files to archive')
-    try:
-        if isinstance(resources, str):
-            resources = list([resources])
+#     LOGGER.info('compressing files to archive')
+#     try:
+#         if isinstance(resources, str):
+#             resources = list([resources])
 
-        resources_filter = [x for x in resources if x is not None]
-        resources = resources_filter
-    except Exception as e:
-        msg = 'failed to prepare file list: %s' % e
-        LOGGER.exception(msg)
-        raise Exception(msg)
+#         resources_filter = [x for x in resources if x is not None]
+#         resources = resources_filter
+#     except Exception as e:
+#         msg = 'failed to prepare file list: %s' % e
+#         LOGGER.exception(msg)
+#         raise Exception(msg)
 
-    if format == 'tar':
-        import tarfile
-        try:
-            o1, archive = mkstemp(dir=dir_output, suffix='.tar')
-            tar = tarfile.open(archive, mode)
+#     if format == 'tar':
+#         import tarfile
+#         try:
+#             o1, archive = mkstemp(dir=dir_output, suffix='.tar')
+#             tar = tarfile.open(archive, mode)
 
-            for f in resources:
-                try:
-                    tar.add(f, arcname=basename(f))
-                except Exception as e:
-                    msg = 'archiving failed for %s: %s' % (f, e)
-                    LOGGER.exception(msg)
-                    raise Exception(msg)
-            tar.close()
-        except Exception as e:
-            msg = 'failed to compress into archive %s', e
-            LOGGER.exception(msg)
-            raise Exception(msg)
-    elif format == 'zip':
-        import zipfile
+#             for f in resources:
+#                 try:
+#                     tar.add(f, arcname=basename(f))
+#                 except Exception as e:
+#                     msg = 'archiving failed for %s: %s' % (f, e)
+#                     LOGGER.exception(msg)
+#                     raise Exception(msg)
+#             tar.close()
+#         except Exception as e:
+#             msg = 'failed to compress into archive %s', e
+#             LOGGER.exception(msg)
+#             raise Exception(msg)
+#     elif format == 'zip':
+#         import zipfile
 
-        LOGGER.info('creating zip archive')
-        try:
-            o1, archive = mkstemp(dir=dir_output, suffix='.zip')
-            zf = zipfile.ZipFile(archive, mode=mode)
-            for f in resources:
-                zf.write(f, basename(f))
-            zf.close()
-        except Exception as e:
-            msg = 'failed to create zip archive: %s' % msg
-            LOGGER.exception(msg)
-            raise Exception(msg)
-            # LOGGER.info(print_info('zipfile_write.zip'))
-    else:
-        raise Exception('no common archive format like: zip / tar')
-    return archive
+#         LOGGER.info('creating zip archive')
+#         try:
+#             o1, archive = mkstemp(dir=dir_output, suffix='.zip')
+#             zf = zipfile.ZipFile(archive, mode=mode)
+#             for f in resources:
+#                 zf.write(f, basename(f))
+#             zf.close()
+#         except Exception as e:
+#             msg = 'failed to create zip archive: %s' % msg
+#             LOGGER.exception(msg)
+#             raise Exception(msg)
+#             # LOGGER.info(print_info('zipfile_write.zip'))
+#     else:
+#         raise Exception('no common archive format like: zip / tar')
+#     return archive
 
 
 def archiveextract(resource, path='.'):
@@ -202,7 +210,8 @@ def archiveextract(resource, path='.'):
         LOGGER.exception('failed to extract archive resource')
     return files
 
-
+# == need to be in eggshell. 
+# Doesn't work with new NCEP datasets...
 def check_creationtime(path, url):
     """
     Compares the creation time of an archive file with the file creation time of the local disc space.
@@ -246,7 +255,8 @@ def download(url, cache=False):
     """
     try:
         if cache:
-            parsed_url = urlparse.urlparse(url)
+            # parsed_url = urlparse.urlparse(url)
+            parsed_url = urlparse(url)
             filename = os.path.join(config.cache_path(), parsed_url.netloc, parsed_url.path.strip('/'))
             if os.path.exists(filename):
                 LOGGER.info('file already in cache: %s', os.path.basename(filename))
@@ -268,68 +278,69 @@ def download(url, cache=False):
         LOGGER.exception('failed to download data')
     return filename
 
-
-def calc_grouping(grouping):
-    """
-    translate time grouping abbreviation (e.g 'JJA') into the appropriate ocgis calc_grouping syntax
-
-    :param grouping: time group abbreviation allowed values: "yr", "mon", "sem",
-                     "ONDJFM", "AMJJAS", "DJF", "MAM", "JJA", "SON"
-
-    :returns list: calc_grouping conformant to ocgis syntax
-    """
-    calc_grouping = ['year']  # default year
-    if grouping == 'yr':
-        calc_grouping = ['year']
-    elif grouping == 'sem':
-        calc_grouping = [[12, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11], 'unique']
-    elif grouping == 'ONDJFM':
-        calc_grouping = [[10, 11, 12, 1, 2, 3], 'unique']
-    elif grouping == 'AMJJAS':
-        calc_grouping = [[4, 5, 6, 7, 8, 9], 'unique']
-    elif grouping == 'DJF':
-        calc_grouping = [[12, 1, 2], 'unique']
-    elif grouping == 'MAM':
-        calc_grouping = [[3, 4, 5], 'unique']
-    elif grouping == 'JJA':
-        calc_grouping = [[6, 7, 8], 'unique']
-    elif grouping == 'SON':
-        calc_grouping = [[9, 10, 11], 'unique']
-    elif grouping == 'day':
-        calc_grouping = ['year', 'month', 'day']
-    elif grouping == 'mon':
-        calc_grouping = ['year', 'month']
-    elif grouping == 'Jan':
-        calc_grouping = [[1], 'unique']
-    elif grouping == 'Feb':
-        calc_grouping = [[2], 'unique']
-    elif grouping == 'Mar':
-        calc_grouping = [[3], 'unique']
-    elif grouping == 'Apr':
-        calc_grouping = [[4], 'unique']
-    elif grouping == 'May':
-        calc_grouping = [[5], 'unique']
-    elif grouping == 'Jun':
-        calc_grouping = [[6], 'unique']
-    elif grouping == 'Jul':
-        calc_grouping = [[7], 'unique']
-    elif grouping == 'Aug':
-        calc_grouping = [[8], 'unique']
-    elif grouping == 'Sep':
-        calc_grouping = [[9], 'unique']
-    elif grouping == 'Oct':
-        calc_grouping = [[10], 'unique']
-    elif grouping == 'Nov':
-        calc_grouping = [[11], 'unique']
-    elif grouping == 'Dec':
-        calc_grouping = [[12], 'unique']
-    elif grouping in ['year', 'month']:
-        calc_grouping = [grouping]
-    else:
-        msg = 'Unknown calculation grouping: %s' % grouping
-        LOGGER.debug(msg)
-        raise Exception(msg)
-    return calc_grouping
+# will be in == eggshell ==
+# now we use ocgis elsewhere...
+# def calc_grouping(grouping):
+#     """
+#     translate time grouping abbreviation (e.g 'JJA') into the appropriate ocgis calc_grouping syntax
+# 
+#     :param grouping: time group abbreviation allowed values: "yr", "mon", "sem",
+#                      "ONDJFM", "AMJJAS", "DJF", "MAM", "JJA", "SON"
+# 
+#     :returns list: calc_grouping conformant to ocgis syntax
+#     """
+#     calc_grouping = ['year']  # default year
+#     if grouping == 'yr':
+#         calc_grouping = ['year']
+#     elif grouping == 'sem':
+#         calc_grouping = [[12, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11], 'unique']
+#     elif grouping == 'ONDJFM':
+#         calc_grouping = [[10, 11, 12, 1, 2, 3], 'unique']
+#     elif grouping == 'AMJJAS':
+#         calc_grouping = [[4, 5, 6, 7, 8, 9], 'unique']
+#     elif grouping == 'DJF':
+#         calc_grouping = [[12, 1, 2], 'unique']
+#     elif grouping == 'MAM':
+#         calc_grouping = [[3, 4, 5], 'unique']
+#     elif grouping == 'JJA':
+#         calc_grouping = [[6, 7, 8], 'unique']
+#     elif grouping == 'SON':
+#         calc_grouping = [[9, 10, 11], 'unique']
+#     elif grouping == 'day':
+#         calc_grouping = ['year', 'month', 'day']
+#     elif grouping == 'mon':
+#         calc_grouping = ['year', 'month']
+#     elif grouping == 'Jan':
+#         calc_grouping = [[1], 'unique']
+#     elif grouping == 'Feb':
+#         calc_grouping = [[2], 'unique']
+#     elif grouping == 'Mar':
+#         calc_grouping = [[3], 'unique']
+#     elif grouping == 'Apr':
+#         calc_grouping = [[4], 'unique']
+#     elif grouping == 'May':
+#         calc_grouping = [[5], 'unique']
+#     elif grouping == 'Jun':
+#         calc_grouping = [[6], 'unique']
+#     elif grouping == 'Jul':
+#         calc_grouping = [[7], 'unique']
+#     elif grouping == 'Aug':
+#         calc_grouping = [[8], 'unique']
+#     elif grouping == 'Sep':
+#         calc_grouping = [[9], 'unique']
+#     elif grouping == 'Oct':
+#         calc_grouping = [[10], 'unique']
+#     elif grouping == 'Nov':
+#         calc_grouping = [[11], 'unique']
+#     elif grouping == 'Dec':
+#         calc_grouping = [[12], 'unique']
+#     elif grouping in ['year', 'month']:
+#         calc_grouping = [grouping]
+#     else:
+#         msg = 'Unknown calculation grouping: %s' % grouping
+#         LOGGER.debug(msg)
+#         raise Exception(msg)
+#     return calc_grouping
 
 
 def download_file(url, out=None, verify=False):
@@ -342,87 +353,88 @@ def download_file(url, out=None, verify=False):
         shutil.copyfileobj(r.raw, fp)
     return local_filename
 
+# == eggshell ==
+# 
+# def drs_filename(resource, skip_timestamp=False, skip_format=False,
+#                  variable=None, rename_file=False, add_file_path=False):
+#     """
+#     generates filename according to the data reference syntax (DRS)
+#     based on the metadata in the resource.
 
-def drs_filename(resource, skip_timestamp=False, skip_format=False,
-                 variable=None, rename_file=False, add_file_path=False):
-    """
-    generates filename according to the data reference syntax (DRS)
-    based on the metadata in the resource.
+#     http://cmip-pcmdi.llnl.gov/cmip5/docs/cmip5_data_reference_syntax.pdf
+#     https://pypi.python.org/pypi/drslib
 
-    http://cmip-pcmdi.llnl.gov/cmip5/docs/cmip5_data_reference_syntax.pdf
-    https://pypi.python.org/pypi/drslib
+#     :param add_file_path: if add_file_path=True, path to file will be added (default=False)
+#     :param resource: netcdf file
+#     :param skip_timestamp: if True then from/to timestamp != added to the filename
+#                            (default: False)
+#     :param variable: appropriate variable for filename, if not set (default), variable will
+#                       be determined. For files with more than one data variable,
+#                       the variable parameter has to be defined (default: )
+#                       example: variable='tas'
+#     :param rename_file: rename the file. (default: False)
+# 
+#     :returns str: DRS filename
+#     """
+#     from os import path, rename
+# 
+#     try:
+#         ds = Dataset(resource)
+#         if variable is None:
+#             variable = get_variable(resource)
+#         # CORDEX example: EUR-11_ICHEC-EC-EARTH_historical_r3i1p1_DMI-HIRHAM5_v1_day
+#         cordex_pattern = "{variable}_{domain}_{driving_model}_{experiment}_{ensemble}_{model}_{version}_{frequency}"
+#         # CMIP5 example: tas_MPI-ESM-LR_historical_r1i1p1
+#         cmip5_pattern = "{variable}_{model}_{experiment}_{ensemble}"
+#         filename = resource
+#         if ds.project_id == 'CORDEX' or ds.project_id == 'EOBS':
+#             filename = cordex_pattern.format(
+#                 variable=variable,
+#                 domain=ds.CORDEX_domain,
+#                 driving_model=ds.driving_model_id,
+#                 experiment=ds.experiment_id,
+#                 ensemble=ds.driving_model_ensemble_member,
+#                 model=ds.model_id,
+#                 version=ds.rcm_version_id,
+#                 frequency=ds.frequency)
+#         elif ds.project_id == 'CMIP5':
+#             # TODO: attributes missing in netcdf file for name generation?
+#             filename = cmip5_pattern.format(
+#                 variable=variable,
+#                 model=ds.model_id,
+#                 experiment=ds.experiment,
+#                 ensemble=ds.parent_experiment_rip
+#             )
+#         else:
+#             raise Exception('unknown project %s' % ds.project_id)
+#         ds.close()
+#     except Exception:
+#         LOGGER.exception('Could not read metadata %s', resource)
+#     try:
+#         # add from/to timestamp if not skipped
+#         if skip_timestamp is False:
+#             LOGGER.debug("add timestamp")
+#             from_timestamp, to_timestamp = get_timerange(resource)
+#             LOGGER.debug("from_timestamp %s", from_timestamp)
+#             filename = "%s_%s-%s" % (filename, int(from_timestamp), int(to_timestamp))
+# 
+#         # add format extension
+#         if skip_format is False:
+#             filename = filename + '.nc'
 
-    :param add_file_path: if add_file_path=True, path to file will be added (default=False)
-    :param resource: netcdf file
-    :param skip_timestamp: if True then from/to timestamp != added to the filename
-                           (default: False)
-    :param variable: appropriate variable for filename, if not set (default), variable will
-                      be determined. For files with more than one data variable,
-                      the variable parameter has to be defined (default: )
-                      example: variable='tas'
-    :param rename_file: rename the file. (default: False)
+#         pf = path.dirname(resource)
+#         # add file path
+#         if add_file_path is True:
+#             filename = path.join(pf, filename)
 
-    :returns str: DRS filename
-    """
-    from os import path, rename
+#         # rename the file
+#         if rename_file is True:
+#             if path.exists(path.join(resource)):
+#                 rename(resource, path.join(pf, filename))
+#     except Exception:
+#         LOGGER.exception('Could not generate DRS filename for %s', resource)
 
-    try:
-        ds = Dataset(resource)
-        if variable is None:
-            variable = get_variable(resource)
-        # CORDEX example: EUR-11_ICHEC-EC-EARTH_historical_r3i1p1_DMI-HIRHAM5_v1_day
-        cordex_pattern = "{variable}_{domain}_{driving_model}_{experiment}_{ensemble}_{model}_{version}_{frequency}"
-        # CMIP5 example: tas_MPI-ESM-LR_historical_r1i1p1
-        cmip5_pattern = "{variable}_{model}_{experiment}_{ensemble}"
-        filename = resource
-        if ds.project_id == 'CORDEX' or ds.project_id == 'EOBS':
-            filename = cordex_pattern.format(
-                variable=variable,
-                domain=ds.CORDEX_domain,
-                driving_model=ds.driving_model_id,
-                experiment=ds.experiment_id,
-                ensemble=ds.driving_model_ensemble_member,
-                model=ds.model_id,
-                version=ds.rcm_version_id,
-                frequency=ds.frequency)
-        elif ds.project_id == 'CMIP5':
-            # TODO: attributes missing in netcdf file for name generation?
-            filename = cmip5_pattern.format(
-                variable=variable,
-                model=ds.model_id,
-                experiment=ds.experiment,
-                ensemble=ds.parent_experiment_rip
-            )
-        else:
-            raise Exception('unknown project %s' % ds.project_id)
-        ds.close()
-    except Exception:
-        LOGGER.exception('Could not read metadata %s', resource)
-    try:
-        # add from/to timestamp if not skipped
-        if skip_timestamp is False:
-            LOGGER.debug("add timestamp")
-            from_timestamp, to_timestamp = get_timerange(resource)
-            LOGGER.debug("from_timestamp %s", from_timestamp)
-            filename = "%s_%s-%s" % (filename, int(from_timestamp), int(to_timestamp))
-
-        # add format extension
-        if skip_format is False:
-            filename = filename + '.nc'
-
-        pf = path.dirname(resource)
-        # add file path
-        if add_file_path is True:
-            filename = path.join(pf, filename)
-
-        # rename the file
-        if rename_file is True:
-            if path.exists(path.join(resource)):
-                rename(resource, path.join(pf, filename))
-    except Exception:
-        LOGGER.exception('Could not generate DRS filename for %s', resource)
-
-    return filename
+#     return filename
 
 
 def has_variable(resource, variable):
@@ -437,7 +449,8 @@ def has_variable(resource, variable):
 
 
 def local_path(url):
-    url_parts = urlparse.urlparse(url)
+    #url_parts = urlparse.urlparse(url)
+    url_parts = urlparse(url)
     return url_parts.path
 
 
@@ -494,45 +507,45 @@ def get_calendar(resource, variable=None):
         calendar = None
     return str(calendar), str(unit)
 
-
-def get_coordinates(resource, variable=None, unrotate=False):
-    """
-    reads out the coordinates of a variable
-
-    :param resource: netCDF resource file
-    :param variable: variable name
-    :param unrotate: If True the coordinates will be returned for unrotated pole
-
-    :returns list, list: latitudes , longitudes
-    """
-    if type(resource) != list:
-        resource = [resource]
-
-    if variable is None:
-        variable = get_variable(resource)
-
-    if unrotate is False:
-        try:
-            if len(resource) > 1:
-                ds = MFDataset(resource)
-            else:
-                ds = Dataset(resource[0])
-
-            var = ds.variables[variable]
-            dims = list(var.dimensions)
-            if 'time' in dims: dims.remove('time')
-            # TODO: find position of lat and long in list and replace dims[0] dims[1]
-            lats = ds.variables[dims[0]][:]
-            lons = ds.variables[dims[1]][:]
-            ds.close()
-            LOGGER.info('got coordinates without pole rotation')
-        except Exception:
-            msg = 'failed to extract coordinates'
-            LOGGER.exception(msg)
-    else:
-        lats, lons = unrotate_pole(resource)
-        LOGGER.info('got coordinates with pole rotation')
-    return lats, lons
+# ==eggshell ==
+# def get_coordinates(resource, variable=None, unrotate=False):
+#     """
+#     reads out the coordinates of a variable
+# 
+#     :param resource: netCDF resource file
+#     :param variable: variable name
+#     :param unrotate: If True the coordinates will be returned for unrotated pole
+# 
+#     :returns list, list: latitudes , longitudes
+#     """
+#     if type(resource) != list:
+#         resource = [resource]
+# 
+#     if variable is None:
+#         variable = get_variable(resource)
+# 
+#     if unrotate is False:
+#         try:
+#             if len(resource) > 1:
+#                 ds = MFDataset(resource)
+#             else:
+#                 ds = Dataset(resource[0])
+# 
+#             var = ds.variables[variable]
+#             dims = list(var.dimensions)
+#             if 'time' in dims: dims.remove('time')
+#             # TODO: find position of lat and long in list and replace dims[0] dims[1]
+#             lats = ds.variables[dims[0]][:]
+#             lons = ds.variables[dims[1]][:]
+#             ds.close()
+#             LOGGER.info('got coordinates without pole rotation')
+#         except Exception:
+#             msg = 'failed to extract coordinates'
+#             LOGGER.exception(msg)
+#     else:
+#         lats, lons = unrotate_pole(resource)
+#         LOGGER.info('got coordinates with pole rotation')
+#     return lats, lons
 
 
 def get_domain(resource):
@@ -735,7 +748,7 @@ def get_time(resource):
 
             # TODO give out dateformat by frequency
             # ERROR: ValueError: unconverted data remains: 12:00:00
-            # from flyingpigeon.metadata import get_frequency
+            # from blackswan.metadata import get_frequency
 
             # frq = get_frequency(resource)
             # if frq is 'day':
@@ -840,226 +853,227 @@ def sort_by_time(resource):
         sorted_list = resource
     return sorted_list
 
+# == eggshell ==
+# def sort_by_filename(resource, historical_concatination=False):
+#     """
+#     Sort a list of files with CORDEX-conformant file names.
 
-def sort_by_filename(resource, historical_concatination=False):
-    """
-    Sort a list of files with CORDEX-conformant file names.
+#     :param resource: netCDF file
+#     :param historical_concatination: if True (default=False), appropriate historial
+#                                     runs will be sorted to the rcp datasets
+#     :return  dictionary: {'drs_filename': [list of netCDF files]}
+#     """
+#     from os import path
+#     if type(resource) == str:
+#         resource = [resource]
 
-    :param resource: netCDF file
-    :param historical_concatination: if True (default=False), appropriate historial
-                                    runs will be sorted to the rcp datasets
-    :return  dictionary: {'drs_filename': [list of netCDF files]}
-    """
-    from os import path
-    if type(resource) == str:
-        resource = [resource]
+#     ndic = {}
+#     tmp_dic = {}
 
-    ndic = {}
-    tmp_dic = {}
+#     try:
+#         if len(resource) > 1:
+#             LOGGER.debug('sort_by_filename module start sorting %s files' % len(resource))
+#             # LOGGER.debug('resource is list with %s files' % len(resource))
+#             try:  # if len(resource) > 1:
+#                 # collect the different experiment names
+#                 for nc in resource:
+#                     # LOGGER.info('file: %s' % nc)
+#                     p, f = path.split(path.abspath(nc))
+#                     n = f.split('_')
+#                     bn = '_'.join(n[0:-1])  # skipping the date information in the filename
+#                     ndic[bn] = []  # dictionary containing all datasets names
+#                 LOGGER.info('found %s datasets', len(ndic.keys()))
+#             except Exception:
+#                 LOGGER.exception('failed to find names of datasets!')
+#             LOGGER.info('check for historical/RCP datasets')
+#             try:
+#                 if historical_concatination is True:
+#                     # select only necessary names
+#                     if any("_rcp" in s for s in ndic.keys()):
+#                         for key in ndic.keys():
+#                             if 'historical' in key:
+#                                 ndic.pop(key)
+#                         LOGGER.info('historical data set names removed from dictionary')
+#                     else:
+#                         LOGGER.info('no RCP dataset names found in dictionary')
+#             except Exception:
+#                 LOGGER.exception('failed to pop historical data set names!')
+#             LOGGER.info('start sorting the files')
+#             try:
+#                 for key in ndic:
+#                     try:
+#                         if historical_concatination is False:
+#                             for n in resource:
+#                                 if '%s_' % key in n:
+#                                     ndic[key].append(path.abspath(n))  # path.join(p, n))
 
-    try:
-        if len(resource) > 1:
-            LOGGER.debug('sort_by_filename module start sorting %s files' % len(resource))
-            # LOGGER.debug('resource is list with %s files' % len(resource))
-            try:  # if len(resource) > 1:
-                # collect the different experiment names
-                for nc in resource:
-                    # LOGGER.info('file: %s' % nc)
-                    p, f = path.split(path.abspath(nc))
-                    n = f.split('_')
-                    bn = '_'.join(n[0:-1])  # skipping the date information in the filename
-                    ndic[bn] = []  # dictionary containing all datasets names
-                LOGGER.info('found %s datasets', len(ndic.keys()))
-            except Exception:
-                LOGGER.exception('failed to find names of datasets!')
-            LOGGER.info('check for historical/RCP datasets')
-            try:
-                if historical_concatination is True:
-                    # select only necessary names
-                    if any("_rcp" in s for s in ndic.keys()):
-                        for key in ndic.keys():
-                            if 'historical' in key:
-                                ndic.pop(key)
-                        LOGGER.info('historical data set names removed from dictionary')
-                    else:
-                        LOGGER.info('no RCP dataset names found in dictionary')
-            except Exception:
-                LOGGER.exception('failed to pop historical data set names!')
-            LOGGER.info('start sorting the files')
-            try:
-                for key in ndic:
-                    try:
-                        if historical_concatination is False:
-                            for n in resource:
-                                if '%s_' % key in n:
-                                    ndic[key].append(path.abspath(n))  # path.join(p, n))
+#                         elif historical_concatination is True:
+#                             key_hist = key.replace('rcp26', 'historical').\
+#                                 replace('rcp45', 'historical').\
+#                                 replace('rcp65', 'historical').\
+#                                 replace('rcp85', 'historical')
+#                             for n in resource:
+#                                 if '%s_' % key in n or '%s_' % key_hist in n:
+#                                     ndic[key].append(path.abspath(n))  # path.join(p, n))
+#                         else:
+#                             LOGGER.error('append file paths to dictionary for key %s failed' % key)
+#                         ndic[key].sort()
+#                     except Exception:
+#                         LOGGER.exception('failed for %s ' % key)
+#             except Exception:
+#                 LOGGER.exception('failed to populate the dictionary with appropriate files')
+#             for key in ndic.keys():
+#                 try:
+#                     ndic[key].sort()
+#                     start, end = get_timerange(ndic[key])
+#                     newkey = key + '_' + start + '-' + end
+#                     tmp_dic[newkey] = ndic[key]
+#                 except Exception:
+#                     msg = 'failed to sort the list of resources and add dates to keyname: %s' % key
+#                     LOGGER.exception(msg)
+#                     tmp_dic[key] = ndic[key]
+#                     # raise Exception(msg)
+#         elif len(resource) == 1:
+#             p, f = path.split(path.abspath(resource[0]))
+#             tmp_dic[f.replace('.nc', '')] = path.abspath(resource[0])
+#             LOGGER.debug('only one file! Nothing to sort, resource is passed into dictionary')
+#         else:
+#             LOGGER.debug('sort_by_filename module failed: resource is not 1 or >1')
+#         LOGGER.info('sort_by_filename module done: %s datasets found' % len(ndic))
+#     except Exception:
+#         msg = 'failed to sort files by filename'
+#         LOGGER.exception(msg)
+#         raise Exception(msg)
+#     return tmp_dic
 
-                        elif historical_concatination is True:
-                            key_hist = key.replace('rcp26', 'historical').\
-                                replace('rcp45', 'historical').\
-                                replace('rcp65', 'historical').\
-                                replace('rcp85', 'historical')
-                            for n in resource:
-                                if '%s_' % key in n or '%s_' % key_hist in n:
-                                    ndic[key].append(path.abspath(n))  # path.join(p, n))
-                        else:
-                            LOGGER.error('append file paths to dictionary for key %s failed' % key)
-                        ndic[key].sort()
-                    except Exception:
-                        LOGGER.exception('failed for %s ' % key)
-            except Exception:
-                LOGGER.exception('failed to populate the dictionary with appropriate files')
-            for key in ndic.keys():
-                try:
-                    ndic[key].sort()
-                    start, end = get_timerange(ndic[key])
-                    newkey = key + '_' + start + '-' + end
-                    tmp_dic[newkey] = ndic[key]
-                except Exception:
-                    msg = 'failed to sort the list of resources and add dates to keyname: %s' % key
-                    LOGGER.exception(msg)
-                    tmp_dic[key] = ndic[key]
-                    # raise Exception(msg)
-        elif len(resource) == 1:
-            p, f = path.split(path.abspath(resource[0]))
-            tmp_dic[f.replace('.nc', '')] = path.abspath(resource[0])
-            LOGGER.debug('only one file! Nothing to sort, resource is passed into dictionary')
-        else:
-            LOGGER.debug('sort_by_filename module failed: resource is not 1 or >1')
-        LOGGER.info('sort_by_filename module done: %s datasets found' % len(ndic))
-    except Exception:
-        msg = 'failed to sort files by filename'
-        LOGGER.exception(msg)
-        raise Exception(msg)
-    return tmp_dic
+# == eggshell ==
+# def searchfile(pattern, base_dir):
+#     """
+#     searches recursive for files with an given pattern,
+# 
+#     :param pattern: file name pattern including wildcards (e.g. tas_*_day_*.nc)
+#     :param base_dir: base direcory of the direcory tree
+# 
+#     return:  list of fitting files
+#     """
+# 
+#     from os import path, walk
+#     import fnmatch
 
+#     nc_list = []
+#     for root, dir, files in walk(base_dir):
+#         for name in files:
+#             if fnmatch.fnmatch(name, pattern):
+#                 nc_list.extend([path.join(root, name)])
+# 
+#     return nc_list
 
-def searchfile(pattern, base_dir):
-    """
-    searches recursive for files with an given pattern,
+# == eggshell ==
+# def search_landsea_mask_by_esgf(resource):
+#    """
+#    Searches a landsea mask (variable sftlf) in ESGF which matches the
+#    NetCDF attributes in the NetCDF files ``resource``.
 
-    :param pattern: file name pattern including wildcards (e.g. tas_*_day_*.nc)
-    :param base_dir: base direcory of the direcory tree
+#    Raises an Exception if no mask is found.
 
-    return:  list of fitting files
-    """
-
-    from os import path, walk
-    import fnmatch
-
-    nc_list = []
-    for root, dir, files in walk(base_dir):
-        for name in files:
-            if fnmatch.fnmatch(name, pattern):
-                nc_list.extend([path.join(root, name)])
-
-    return nc_list
-
-
-def search_landsea_mask_by_esgf(resource):
-    """
-    Searches a landsea mask (variable sftlf) in ESGF which matches the
-    NetCDF attributes in the NetCDF files ``resource``.
-
-    Raises an Exception if no mask is found.
-
-    Returns the OpenDAP URL of the first found mask file.
-    """
-    # fill search constraints from nc attributes
-    ds = Dataset(resource)
-    attributes = ds.ncattrs()
-    constraints = dict(variable="sftlf")
-    for attr, facet in ATTRIBUTE_TO_FACETS_MAP.iteritems():
-        if attr in attributes:
-            constraints[facet] = ds.getncattr(attr)
+#    Returns the OpenDAP URL of the first found mask file.
+#    """
+#    # fill search constraints from nc attributes
+#    ds = Dataset(resource)
+#    attributes = ds.ncattrs()
+#    constraints = dict(variable="sftlf")
+#    for attr, facet in ATTRIBUTE_TO_FACETS_MAP.iteritems():
+#        if attr in attributes:
+#            constraints[facet] = ds.getncattr(attr)
 
     # run file search
-    conn = SearchConnection(config.esgfsearch_url(), distrib=config.esgfsearch_distrib())
-    ctx = conn.new_context(search_type=TYPE_FILE, **constraints)
-    if ctx.hit_count == 0:
-        raise Exception("Could not find a mask in ESGF for dataset {0}".format(
-            os.path.basename(resource)))
-        # LOGGER.exception("Could not find a mask in ESGF.")
-        # return
-    if ctx.hit_count > 1:
-        LOGGER.warn("Found more then one mask file.")
-    results = ctx.search(batch_size=1)
-    return results[0].opendap_url
+#    conn = SearchConnection(config.esgfsearch_url(), distrib=config.esgfsearch_distrib())
+#    ctx = conn.new_context(search_type=TYPE_FILE, **constraints)
+#    if ctx.hit_count == 0:
+#        raise Exception("Could not find a mask in ESGF for dataset {0}".format(
+#            os.path.basename(resource)))
+#        # LOGGER.exception("Could not find a mask in ESGF.")
+#        # return
+#    if ctx.hit_count > 1:
+#        LOGGER.warn("Found more then one mask file.")
+#    results = ctx.search(batch_size=1)
+#    return results[0].opendap_url
 
-
-def unrotate_pole(resource, write_to_file=False):
-    """
-    Calculates the unrotatated coordinates for a rotated pole grid
-
-    :param resource: netCDF file or list of files of one datatset
-    :param write_to_file: calculated values will be written to file if True (default=False)
-
-    :return list: lats, lons
-    """
-    from numpy import reshape, repeat
-    from iris.analysis import cartography as ct
-
-    if len(resource) == 1:
-        ds = Dataset(resource[0])
-    else:
-        ds = MFDataset(resource)
-
-    # ds = MFDataset(resource)
-
-    if 'lat' in ds.variables.keys():
-        LOGGER.info('file include unrotated coordinate values')
-        lats = ds.variables['lat'][:]
-        lons = ds.variables['lon'][:]
-    else:
-        try:
-            if 'rotated_latitude_longitude' in ds.variables:
-                rp = ds.variables['rotated_latitude_longitude']
-            elif 'rotated_pole' in ds.variables:
-                rp = ds.variables['rotated_pole']
-            else:
-                LOGGER.debug('rotated pole variable not found')
-            pole_lat = rp.grid_north_pole_latitude
-            pole_lon = rp.grid_north_pole_longitude
-        except:
-            LOGGER.exception('failed to find rotated_pole coordinates')
-        try:
-            if 'rlat' in ds.variables:
-                rlats = ds.variables['rlat']
-                rlons = ds.variables['rlon']
-
-            if 'x' in ds.variables:
-                rlats = ds.variables['y']
-                rlons = ds.variables['x']
-        except:
-            LOGGER.exception('failed to read in rotated coordiates')
-
-        try:
-            rlons_i = reshape(rlons, (1, len(rlons)))
-            rlats_i = reshape(rlats, (len(rlats), 1))
-            grid_rlats = repeat(rlats_i, (len(rlons)), axis=1)
-            grid_rlons = repeat(rlons_i, (len(rlats)), axis=0)
-        except:
-            LOGGER.execption('failed to repeat coordinates')
-
-        lons, lats = ct.unrotate_pole(grid_rlons, grid_rlats, pole_lon, pole_lat)
-
-    if write_to_file is True:
-        lat = ds.createVariable('lat', 'f8', ('rlat', 'rlon'))
-        lon = ds.createVariable('lon', 'f8', ('rlat', 'rlon'))
-
-        lon.standard_name = "longitude"
-        lon.long_name = "longitude coordinate"
-        lon.units = 'degrees_east'
-        lat.standard_name = "latitude"
-        lat.long_name = "latitude coordinate"
-        lat.units = 'degrees_north'
-
-        lat[:] = lats
-        lon[:] = lons
-
-    ds.close()
-
-    return lats, lons
+# == eggshell ==
+# We will need it for CORDEX!
+# def unrotate_pole(resource, write_to_file=False):
+#     """
+#     Calculates the unrotatated coordinates for a rotated pole grid
+# 
+#     :param resource: netCDF file or list of files of one datatset
+#     :param write_to_file: calculated values will be written to file if True (default=False)
+# 
+#     :return list: lats, lons
+#     """
+#     from numpy import reshape, repeat
+#     from iris.analysis import cartography as ct
+# 
+#     if len(resource) == 1:
+#         ds = Dataset(resource[0])
+#     else:
+#         ds = MFDataset(resource)
+# 
+#     # ds = MFDataset(resource)
+# 
+#     if 'lat' in ds.variables.keys():
+#         LOGGER.info('file include unrotated coordinate values')
+#         lats = ds.variables['lat'][:]
+#         lons = ds.variables['lon'][:]
+#     else:
+#         try:
+#             if 'rotated_latitude_longitude' in ds.variables:
+#                 rp = ds.variables['rotated_latitude_longitude']
+#             elif 'rotated_pole' in ds.variables:
+#                 rp = ds.variables['rotated_pole']
+#             else:
+#                 LOGGER.debug('rotated pole variable not found')
+#             pole_lat = rp.grid_north_pole_latitude
+#             pole_lon = rp.grid_north_pole_longitude
+#         except:
+#             LOGGER.exception('failed to find rotated_pole coordinates')
+#         try:
+#             if 'rlat' in ds.variables:
+#                 rlats = ds.variables['rlat']
+#                 rlons = ds.variables['rlon']
+# 
+#             if 'x' in ds.variables:
+#                 rlats = ds.variables['y']
+#                 rlons = ds.variables['x']
+#         except:
+#             LOGGER.exception('failed to read in rotated coordiates')
+# 
+#         try:
+#             rlons_i = reshape(rlons, (1, len(rlons)))
+#             rlats_i = reshape(rlats, (len(rlats), 1))
+#             grid_rlats = repeat(rlats_i, (len(rlons)), axis=1)
+#             grid_rlons = repeat(rlons_i, (len(rlats)), axis=0)
+#         except:
+#             LOGGER.execption('failed to repeat coordinates')
+# 
+#         lons, lats = ct.unrotate_pole(grid_rlons, grid_rlats, pole_lon, pole_lat)
+# 
+#     if write_to_file is True:
+#         lat = ds.createVariable('lat', 'f8', ('rlat', 'rlon'))
+#         lon = ds.createVariable('lon', 'f8', ('rlat', 'rlon'))
+# 
+#         lon.standard_name = "longitude"
+#         lon.long_name = "longitude coordinate"
+#         lon.units = 'degrees_east'
+#         lat.standard_name = "latitude"
+#         lat.long_name = "latitude coordinate"
+#         lat.units = 'degrees_north'
+# 
+#         lat[:] = lats
+#         lon[:] = lons
+# 
+#     ds.close()
+# 
+#     return lats, lons
 
 
 # def get_dimension_map(resource):
@@ -1111,83 +1125,83 @@ def unrotate_pole(resource, write_to_file=False):
 #     dimension_map = None
 #   return dimension_map
 
-
-class FreeMemory(object):
-    """
-    Non-cross platform way to get free memory on Linux. Note that this code
-    uses the key word as, which is conditionally Python 2.5 compatible!
-    If for some reason you still have Python 2.5 on your system, add in the head
-    of your code, before all imports:
-    from __future__ import with_statement
-    """
-
-    def __init__(self, unit='kB'):
-        with open('/proc/meminfo', 'r') as mem:
-            lines = mem.readlines()
-        self._tot = int(lines[0].split()[1])
-        self._free = int(lines[1].split()[1])
-        self._buff = int(lines[2].split()[1])
-        self._cached = int(lines[3].split()[1])
-        self._shared = int(lines[20].split()[1])
-        self._swapt = int(lines[14].split()[1])
-        self._swapf = int(lines[15].split()[1])
-        self._swapu = self._swapt - self._swapf
-        self.unit = unit
-        self._convert = self._faktor()
-
-    def _faktor(self):
-        """determine the conversion factor"""
-        if self.unit == 'kB':
-            return 1
-        if self.unit == 'k':
-            return 1024.0
-        if self.unit == 'MB':
-            return 1 / 1024.0
-        if self.unit == 'GB':
-            return 1 / 1024.0 / 1024.0
-        if self.unit == '%':
-            return 1.0 / self._tot
-        else:
-            raise Exception("Unit not understood")
-
-    @property
-    def total(self):
-        return self._convert * self._tot
-
-    @property
-    def used(self):
-        return self._convert * (self._tot - self._free)
-
-    @property
-    def used_real(self):
-        """memory used which != cache or buffers"""
-        return self._convert * (self._tot - self._free - self._buff - self._cached)
-
-    @property
-    def shared(self):
-        return self._convert * (self._tot - self._free)
-
-    @property
-    def buffers(self):
-        return self._convert * (self._buff)
-
-    @property
-    def cached(self):
-        return self._convert * self._cached
-
-    @property
-    def user_free(self):
-        """This is the free memory available for the user"""
-        return self._convert * (self._free + self._buff + self._cached)
-
-    @property
-    def swap(self):
-        return self._convert * self._swapt
-
-    @property
-    def swap_free(self):
-        return self._convert * self._swapf
-
-    @property
-    def swap_used(self):
-        return self._convert * self._swapu
+# == eggshell ==
+# class FreeMemory(object):
+#     """
+#     Non-cross platform way to get free memory on Linux. Note that this code
+#     uses the key word as, which is conditionally Python 2.5 compatible!
+#     If for some reason you still have Python 2.5 on your system, add in the head
+#     of your code, before all imports:
+#     from __future__ import with_statement
+#     """
+# 
+#     def __init__(self, unit='kB'):
+#         with open('/proc/meminfo', 'r') as mem:
+#             lines = mem.readlines()
+#         self._tot = int(lines[0].split()[1])
+#         self._free = int(lines[1].split()[1])
+#         self._buff = int(lines[2].split()[1])
+#         self._cached = int(lines[3].split()[1])
+#         self._shared = int(lines[20].split()[1])
+#         self._swapt = int(lines[14].split()[1])
+#         self._swapf = int(lines[15].split()[1])
+#         self._swapu = self._swapt - self._swapf
+#         self.unit = unit
+#         self._convert = self._faktor()
+# 
+#     def _faktor(self):
+#         """determine the conversion factor"""
+#         if self.unit == 'kB':
+#             return 1
+#         if self.unit == 'k':
+#             return 1024.0
+#         if self.unit == 'MB':
+#             return 1 / 1024.0
+#         if self.unit == 'GB':
+#             return 1 / 1024.0 / 1024.0
+#         if self.unit == '%':
+#             return 1.0 / self._tot
+#         else:
+#             raise Exception("Unit not understood")
+# 
+#     @property
+#     def total(self):
+#         return self._convert * self._tot
+# 
+#     @property
+#     def used(self):
+#         return self._convert * (self._tot - self._free)
+# 
+#     @property
+#     def used_real(self):
+#         """memory used which != cache or buffers"""
+#         return self._convert * (self._tot - self._free - self._buff - self._cached)
+# 
+#     @property
+#     def shared(self):
+#         return self._convert * (self._tot - self._free)
+# 
+#     @property
+#     def buffers(self):
+#         return self._convert * (self._buff)
+# 
+#     @property
+#     def cached(self):
+#         return self._convert * self._cached
+# 
+#     @property
+#     def user_free(self):
+#         """This is the free memory available for the user"""
+#         return self._convert * (self._free + self._buff + self._cached)
+# 
+#     @property
+#     def swap(self):
+#         return self._convert * self._swapt
+# 
+#     @property
+#     def swap_free(self):
+#         return self._convert * self._swapf
+# 
+#     @property
+#     def swap_used(self):
+#         return self._convert * self._swapu
