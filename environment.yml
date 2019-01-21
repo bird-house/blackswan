@@ -38,3 +38,5 @@ dependencies:
 ###### analogue#####
 #- castf90=0.1.5
 ####################
+- pip:
+  - -e git+https://github.com/NCPP/ocgis#egg=owslib
