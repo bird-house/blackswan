@@ -5,12 +5,12 @@ Blackswan
    :target: http://blackswan.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
 
-.. image:: https://travis-ci.org/nkadygrov/blackswan.svg?branch=master
-   :target: https://travis-ci.org/nkadygrov/blackswan
+.. image:: https://travis-ci.org/bird-house/blackswan.svg?branch=master
+   :target: https://travis-ci.org/bird-house/blackswan
    :alt: Travis Build
 
-.. image:: https://img.shields.io/github/license/nkadygrov/blackswan.svg
-    :target: https://github.com/nkadygrov/blackswan/blob/master/LICENSE.txt
+.. image:: https://img.shields.io/github/license/bird-house/blackswan.svg
+    :target: https://github.com/bird-house/blackswan/blob/master/LICENSE.txt
     :alt: GitHub license
 
 .. image:: https://badges.gitter.im/bird-house/birdhouse.svg
