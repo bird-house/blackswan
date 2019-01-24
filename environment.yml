@@ -19,8 +19,9 @@ dependencies:
 - click
 - psutil
 ######################
+- python=3
 - numpy
-- ocgis
+#- ocgis
 - gdal=2.4
 # We use ocgis version of netcdf4
 # - netcdf4
