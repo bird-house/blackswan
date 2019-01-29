@@ -41,6 +41,10 @@ def masks_path():
     return os.path.join(data_path(), 'masks')
 
 
+def obs_path():
+    return os.path.join(data_path(), 'obs')
+
+
 def output_path():
     return configuration.get_config_value("server", "outputpath")
 
