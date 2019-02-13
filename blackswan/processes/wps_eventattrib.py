@@ -36,7 +36,7 @@ import logging
 LOGGER = logging.getLogger("PYWPS")
 
 
-class AnalogsreanalyseProcess(Process):
+class EventAttributionProcess(Process):
     def __init__(self):
         inputs = [
 
@@ -47,15 +47,6 @@ class AnalogsreanalyseProcess(Process):
                          min_occurs=1,
                          max_occurs=1,
                          allowed_values=_PRESSUREDATA_
-                         ),
-
-            LiteralInput("timeres", "Reanalyses temporal resolution",
-                         abstract="Temporal resolution of the reanalyses (only for 20CRV2)",
-                         default="day",
-                         data_type='string',
-                         min_occurs=0,
-                         max_occurs=1,
-                         allowed_values=['day', '6h']
                          ),
 
             LiteralInput('BBox', 'Bounding Box',
@@ -71,7 +62,7 @@ class AnalogsreanalyseProcess(Process):
                          default='-20,40,30,70',
                          ),
 
-            LiteralInput('dateSt', 'Start date of analysis period',
+            LiteralInput('dateSt', 'Start date of event analysis period',
                          data_type='date',
                          abstract='First day of the period to be analysed',
                          default='2018-01-01',
@@ -79,25 +70,41 @@ class AnalogsreanalyseProcess(Process):
                          max_occurs=1,
                          ),
 
-            LiteralInput('dateEn', 'End date of analysis period',
+            LiteralInput('dateEn', 'End date of event analysis period',
                          data_type='date',
                          abstract='Last day of the period to be analysed',
-                         default='2018-01-10',
+                         default='2018-01-31',
                          min_occurs=0,
                          max_occurs=1,
                          ),
 
-            LiteralInput('refSt', 'Start date of reference period',
+            LiteralInput('refSt1', 'Start date of reference period 1',
                          data_type='date',
-                         abstract='First day of the period where analogues being picked',
+                         abstract='First day of the period 1 where analogues being picked',
                          default='1948-01-01',
                          min_occurs=0,
                          max_occurs=1,
                          ),
 
-            LiteralInput('refEn', 'End date of reference period',
+            LiteralInput('refEn1', 'End date of reference period 1',
                          data_type='date',
-                         abstract='Last day of the period where analogues being picked',
+                         abstract='Last day of the period 1 where analogues being picked',
+                         default='1980-12-31',
+                         min_occurs=0,
+                         max_occurs=1,
+                         ),
+
+            LiteralInput('refSt2', 'Start date of reference period 2',
+                         data_type='date',
+                         abstract='First day of the period 2 where analogues being picked',
+                         default='1981-01-01',
+                         min_occurs=0,
+                         max_occurs=1,
+                         ),
+
+            LiteralInput('refEn2', 'End date of reference period 2',
+                         data_type='date',
+                         abstract='Last day of the period 2 where analogues being picked',
                          default='2016-12-31',
                          min_occurs=0,
                          max_occurs=1,
@@ -174,55 +181,103 @@ class AnalogsreanalyseProcess(Process):
         ]
 
         outputs = [
-            ComplexOutput("analog_pdf", "Maps with mean analogs and simulation",
+            ComplexOutput("analog_pdf1", "Maps with mean analogs and simulation",
                           abstract="Analogs Maps",
                           supported_formats=[Format('image/pdf')],
                           as_reference=True,
                           ),
 
-            ComplexOutput("config", "Config File",
+            ComplexOutput("analog_pdf2", "Maps with mean analogs and simulation",
+                          abstract="Analogs Maps",
+                          supported_formats=[Format('image/pdf')],
+                          as_reference=True,
+                          ),
+
+            ComplexOutput("config1", "Config File for 1st period",
                           abstract="Config file used for the Fortran process",
                           supported_formats=[Format("text/plain")],
                           as_reference=True,
                           ),
 
-            ComplexOutput("analogs", "Analogues File",
+            ComplexOutput("config2", "Config File for 2nd period",
+                          abstract="Config file used for the Fortran process",
+                          supported_formats=[Format("text/plain")],
+                          as_reference=True,
+                          ),
+
+            ComplexOutput("analogs1", "Analogues File for 1st period",
                           abstract="mulit-column text file",
                           supported_formats=[Format("text/plain")],
                           as_reference=True,
                           ),
 
-            ComplexOutput("formated_analogs", "Formated Analogues File",
+            ComplexOutput("analogs2", "Analogues File for 2nd period",
+                          abstract="mulit-column text file",
+                          supported_formats=[Format("text/plain")],
+                          as_reference=True,
+                          ),
+
+            ComplexOutput("formated_analogs1", "Formated Analogues File for Ref1",
+                          abstract="Formated analogues file for viewer",
+                          supported_formats=[Format("text/plain")],
+                          as_reference=True,
+                          ),
+
+            ComplexOutput("formated_analogs2", "Formated Analogues File for Ref2",
                           abstract="Formated analogues file for viewer",
                           supported_formats=[Format("text/plain")],
                           as_reference=True,
                           ),
 
             ComplexOutput('output_netcdf', 'Subsets for one dataset',
-                          abstract="Prepared netCDF file as input for simulation (as input for weatherregime calculation)",
+                          abstract="Prepared netCDF file as simulations (event period)",
                           as_reference=True,
                           supported_formats=[Format('application/x-netcdf')]
                           ),
 
-            ComplexOutput('target_netcdf', 'Subsets for one dataset',
-                          abstract="Prepared netCDF file as input for archive",
+            ComplexOutput('target_netcdf1', 'Subsets for one dataset',
+                          abstract="Prepared netCDF file as Reference 1 period",
                           as_reference=True,
                           supported_formats=[Format('application/x-netcdf')]
                           ),
 
-            ComplexOutput('base_netcdf', 'Base Seasonal cycle',
+            ComplexOutput('target_netcdf2', 'Subsets for one dataset',
+                          abstract="Prepared netCDF file as Reference 1 period",
+                          as_reference=True,
+                          supported_formats=[Format('application/x-netcdf')]
+                          ),
+
+            ComplexOutput('base_netcdf1', 'Base Seasonal cycle from 1st ref period',
                           abstract="Base seasonal cycle netCDF",
                           as_reference=True,
                           supported_formats=[Format('application/x-netcdf')]
                           ),
 
-            ComplexOutput('sim_netcdf', 'Sim Seasonal cycle',
-                          abstract="Sim seasonal cycle netCDF",
+            ComplexOutput('base_netcdf2', 'Base Seasonal cycle from 2nd ref period',
+                          abstract="Base seasonal cycle netCDF",
                           as_reference=True,
                           supported_formats=[Format('application/x-netcdf')]
                           ),
 
-            ComplexOutput("output", "Analogues Viewer html page",
+            ComplexOutput('sim_netcdf1', 'Sim Seasonal cycle 1',
+                          abstract="Sim seasonal cycle 1 netCDF",
+                          as_reference=True,
+                          supported_formats=[Format('application/x-netcdf')]
+                          ),
+
+            ComplexOutput('sim_netcdf2', 'Sim Seasonal cycle 2',
+                          abstract="Sim seasonal cycle 2 netCDF",
+                          as_reference=True,
+                          supported_formats=[Format('application/x-netcdf')]
+                          ),
+
+            ComplexOutput("output1", "Analogues Viewer html page",
+                          abstract="Interactive visualization of calculated analogues",
+                          supported_formats=[Format("text/html")],
+                          as_reference=True,
+                          ),
+
+            ComplexOutput("output2", "Analogues Viewer html page",
                           abstract="Interactive visualization of calculated analogues",
                           supported_formats=[Format("text/html")],
                           as_reference=True,
@@ -235,11 +290,11 @@ class AnalogsreanalyseProcess(Process):
                           ),
         ]
 
-        super(AnalogsreanalyseProcess, self).__init__(
+        super(EventAttributionProcess, self).__init__(
             self._handler,
-            identifier="analogs_reanalyse",
-            title="Analogues of circulation (based on reanalyses data)",
-            abstract='Search for days with analogue pressure pattern for reanalyses data sets',
+            identifier="events_attribution",
+            title="Attribution of extreme event with analogues with reanalyses data",
+            abstract='Attribution of extreme event using analogues of circulation (based on reanalyses data)',
             version="0.10",
             metadata=[
                 Metadata('LSCE', 'http://www.lsce.ipsl.fr/en/index.php'),
@@ -259,9 +314,6 @@ class AnalogsreanalyseProcess(Process):
         LOGGER.debug('CURDIR XXXX : %s ' % (abspath(curdir)))
 
         init_process_logger('log.txt')
-        # init_process_logger(os.path.join(self.workdir, 'log.txt'))
-
-        # response.outputs['output_log'].file = 'log.txt'
 
         LOGGER.info('Start process')
         response.update_status('execution started at : {}'.format(dt.now()), 5)
@@ -276,13 +328,20 @@ class AnalogsreanalyseProcess(Process):
         try:
             response.update_status('read input parameter : %s ' % dt.now(), 6)
 
-            refSt = request.inputs['refSt'][0].data
-            refEn = request.inputs['refEn'][0].data
+            refSt1 = request.inputs['refSt1'][0].data
+            refEn1 = request.inputs['refEn1'][0].data
+
+            refSt2 = request.inputs['refSt2'][0].data
+            refEn2 = request.inputs['refEn2'][0].data
+
             dateSt = request.inputs['dateSt'][0].data
             dateEn = request.inputs['dateEn'][0].data
+
             seasonwin = request.inputs['seasonwin'][0].data
             nanalog = request.inputs['nanalog'][0].data
-            timres = request.inputs['timeres'][0].data
+
+            # timres = request.inputs['timeres'][0].data
+            timres = 'day'
 
             bboxDef = '-20,40,30,70'  # in general format
 
@@ -327,12 +386,13 @@ class AnalogsreanalyseProcess(Process):
         ######################################
         # convert types and set environment
         ######################################
+
         try:
             response.update_status('Preparing enviroment converting arguments', 8)
-            LOGGER.debug('date: %s %s %s %s ' % (type(refSt), refEn, dateSt, dateSt))
+            LOGGER.debug('dates: %s %s %s %s %s %s %s' % (type(refSt1), refSt1, refEn1, refSt2, refEn2, dateSt, dateEn))
 
-            start = min(refSt, dateSt)
-            end = max(refEn, dateEn)
+            start = min(refSt1, refSt2, dateSt)
+            end = max(refEn1, refEn2, dateEn)
 
             if normalize == 'None':
                 seacyc = False
@@ -384,6 +444,7 @@ class AnalogsreanalyseProcess(Process):
             LOGGER.exception(msg)
             raise Exception(msg)
 
+
         ##########################################
         # fetch Data from original data archive
         ##########################################
@@ -416,13 +477,11 @@ class AnalogsreanalyseProcess(Process):
             ser_r = False
 
         # ################################
-
         # For 20CRV2 geopotential height, daily dataset for 100 years is about 50 Gb
         # So it makes sense, to operate it step-by-step
         # TODO: need to create dictionary for such datasets (for models as well)
         # TODO: benchmark the method bellow for NCEP z500 for 60 years
 
-#        if ('20CRV2' in model) and ('z' in var):
         if ('z' in var):
             tmp_total = []
             origvar = get_variable(model_nc)
@@ -490,11 +549,10 @@ class AnalogsreanalyseProcess(Process):
         # else:
         #     model_subset = model_subset_tmp
 
-        # Remove \/\/\/ if work with 6h data...
+        # Uncomment \/\/\/ if work with 6h data...
         model_subset = model_subset_tmp
 
         LOGGER.info('Dataset subset done: %s ', model_subset)
-
         response.update_status('dataset subsetted', 15)
 
         # BLOCK OF DETRENDING of model_subset !
@@ -519,31 +577,40 @@ class AnalogsreanalyseProcess(Process):
         ########################
         # input data preperation
         ########################
+
         response.update_status('Start preparing input data', 30)
         start_time = time.time()  # measure data preperation ...
 
         try:
-            # Construct descriptive filenames for the three files
-            # listed in config file
-
-            # refDatesString = dt.strftime(refSt, '%Y-%m-%d') + "_" + dt.strftime(refEn, '%Y-%m-%d')
-            # simDatesString = dt.strftime(dateSt, '%Y-%m-%d') + "_" + dt.strftime(dateEn, '%Y-%m-%d')
+            # Construct descriptive filenames for the files
+            # to be listed in config file
 
             # Fix < 1900 issue...
-            refDatesString = refSt.isoformat().strip().split("T")[0] + "_" + refEn.isoformat().strip().split("T")[0]
+            refDatesString1 = refSt1.isoformat().strip().split("T")[0] + "_" + refEn1.isoformat().strip().split("T")[0]
+            refDatesString2 = refSt2.isoformat().strip().split("T")[0] + "_" + refEn2.isoformat().strip().split("T")[0]
             simDatesString = dateSt.isoformat().strip().split("T")[0] + "_" + dateEn.isoformat().strip().split("T")[0]
 
-            archiveNameString = "base_" + var + "_" + refDatesString + '_%.1f_%.1f_%.1f_%.1f' \
+            archiveNameString1 = "base1_" + var + "_" + refDatesString1 + '_%.1f_%.1f_%.1f_%.1f' \
                                 % (bbox[0], bbox[2], bbox[1], bbox[3])
+            archiveNameString2 = "base2_" + var + "_" + refDatesString2 + '_%.1f_%.1f_%.1f_%.1f' \
+                                % (bbox[0], bbox[2], bbox[1], bbox[3])
+
             simNameString = "sim_" + var + "_" + simDatesString + '_%.1f_%.1f_%.1f_%.1f' \
                             % (bbox[0], bbox[2], bbox[1], bbox[3])
-            archive = call(resource=model_subset,
-                           time_range=[refSt, refEn],
-                           prefix=archiveNameString)
+
+            archive1 = call(resource=model_subset,
+                           time_range=[refSt1, refEn1],
+                           prefix=archiveNameString1)
+            archive2 = call(resource=model_subset,
+                           time_range=[refSt2, refEn2],
+                           prefix=archiveNameString2)
+
             simulation = call(resource=model_subset, time_range=[dateSt, dateEn],
                               prefix=simNameString)
             LOGGER.info('archive and simulation files generated: %s, %s'
-                        % (archive, simulation))
+                        % (archive1, simulation))
+            LOGGER.info('archive and simulation files generated: %s, %s'
+                        % (archive2, simulation))
         except Exception as e:
             msg = 'failed to prepare archive and simulation files %s ' % e
             LOGGER.exception(msg)
@@ -553,29 +620,36 @@ class AnalogsreanalyseProcess(Process):
             if seacyc is True:
                 LOGGER.info('normalization function with method: %s '
                             % normalize)
-                seasoncyc_base, seasoncyc_sim = analogs.seacyc(
-                    archive,
-                    simulation,
+                seasoncyc_base1, seasoncyc_sim1 = analogs.seacyc(
+                    archive1,
+                    simulation, basecyc='seasoncyc_base1.nc', simcyc='seasoncyc_sim1.nc',
+                    method=normalize)
+                seasoncyc_base2, seasoncyc_sim2 = analogs.seacyc(
+                    archive2,
+                    simulation, basecyc='seasoncyc_base2.nc', simcyc='seasoncyc_sim2.nc',
                     method=normalize)
             else:
-                seasoncyc_base = seasoncyc_sim = None
+                seasoncyc_base1 = seasoncyc_base2 = seasoncyc_sim1 = seasoncyc_sim2 = None
         except Exception as e:
             msg = 'failed to generate normalization files %s ' % e
             LOGGER.exception(msg)
             raise Exception(msg)
 
-        output_file = 'output.txt'
-        files = [os.path.abspath(archive), os.path.abspath(simulation), output_file]
+        output_file1 = 'output1.txt'
+        output_file2 = 'output2.txt'
+        files1 = [os.path.abspath(archive1), os.path.abspath(simulation), output_file1]
+        files2 = [os.path.abspath(archive2), os.path.abspath(simulation), output_file2]
         LOGGER.debug("Data preperation took %s seconds.",
                      time.time() - start_time)
 
         ############################
-        # generate the config file
+        # generate the config files
         ############################
-        config_file = analogs.get_configfile(
-            files=files,
-            seasoncyc_base=seasoncyc_base,
-            seasoncyc_sim=seasoncyc_sim,
+
+        config_file1 = analogs.get_configfile(
+            files=files1,
+            seasoncyc_base=seasoncyc_base1,
+            seasoncyc_sim=seasoncyc_sim1,
             base_id=model,
             sim_id=model,
             timewin=timewin,
@@ -589,13 +663,33 @@ class AnalogsreanalyseProcess(Process):
             calccor=True,
             silent=False,
             # period=[dt.strftime(refSt, '%Y-%m-%d'), dt.strftime(refEn, '%Y-%m-%d')],
-            period=[refSt.isoformat().strip().split("T")[0], refEn.isoformat().strip().split("T")[0]],
-            bbox="{0[0]},{0[2]},{0[1]},{0[3]}".format(bbox))
+            period=[refSt1.isoformat().strip().split("T")[0], refEn1.isoformat().strip().split("T")[0]],
+            bbox="{0[0]},{0[2]},{0[1]},{0[3]}".format(bbox), config_file = 'config1.txt')
+
+        config_file2 = analogs.get_configfile(
+            files=files2,
+            seasoncyc_base=seasoncyc_base2,
+            seasoncyc_sim=seasoncyc_sim2,
+            base_id=model,
+            sim_id=model,
+            timewin=timewin,
+            varname=var,
+            seacyc=seacyc,
+            cycsmooth=91,
+            nanalog=nanalog,
+            seasonwin=seasonwin,
+            distfun=distance,
+            outformat=outformat,
+            calccor=True,
+            silent=False,
+            # period=[dt.strftime(refSt, '%Y-%m-%d'), dt.strftime(refEn, '%Y-%m-%d')],
+            period=[refSt2.isoformat().strip().split("T")[0], refEn2.isoformat().strip().split("T")[0]],
+            bbox="{0[0]},{0[2]},{0[1]},{0[3]}".format(bbox), config_file = 'config2.txt')
+
         response.update_status('generated config file', 40)
         #######################
         # CASTf90 call
         #######################
-        start_time = time.time()  # measure call castf90
 
         # -----------------------
         try:
@@ -626,68 +720,103 @@ class AnalogsreanalyseProcess(Process):
         os.environ['LD_LIBRARY_PATH'] = hdflib
         # ################################################################################
 
-        response.update_status('Start CASTf90 call', 50)
+        response.update_status('Start CASTf90 call for 1st ref period', 50)
         try:
-            # response.update_status('execution of CASTf90', 50)
-            cmd = ['analogue.out', config_file]
+            cmd = ['analogue.out', config_file1]
             LOGGER.debug("castf90 command: %s", cmd)
-            output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-            LOGGER.info('analogue output:\n %s', output)
-            response.update_status('**** CASTf90 suceeded', 60)
+            output1 = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+            LOGGER.info('analogue output:\n %s', output1)
+            response.update_status('**** CASTf90 1st suceeded', 60)
+
+            cmd = ['analogue.out', config_file2]
+            LOGGER.debug("castf90 command: %s", cmd)
+            output2 = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+            LOGGER.info('analogue output:\n %s', output2)
+            response.update_status('**** CASTf90 2nd suceeded', 70)
+
         except CalledProcessError as e:
             msg = 'CASTf90 failed:\n{0}'.format(e.output)
             LOGGER.exception(msg)
             raise Exception(msg)
+
         LOGGER.debug("castf90 took %s seconds.", time.time() - start_time)
 
         # TODO: Add try - except for pdfs
+
         if plot == 'Yes':
-            analogs_pdf = analogs.plot_analogs(configfile=config_file)
+            analogs_pdf1 = analogs.plot_analogs(configfile=config_file1, soutpdf = 'Analogs1.pdf')
+            analogs_pdf2 = analogs.plot_analogs(configfile=config_file2, soutpdf = 'Analogs2.pdf')
         else:
-            analogs_pdf = 'dummy_plot.pdf'
-            with open(analogs_pdf, 'a'): os.utime(analogs_pdf, None)
+            analogs_pdf1 = 'dummy_plot1.pdf'
+            with open(analogs_pdf1, 'a'): os.utime(analogs_pdf1, None)
+            analogs_pdf2 = 'dummy_plot2.pdf'
+            with open(analogs_pdf2, 'a'): os.utime(analogs_pdf2, None)
 
-        response.update_status('preparing output', 70)
+        response.update_status('preparing output', 80)
 
-        response.outputs['analog_pdf'].file = analogs_pdf
-        response.outputs['config'].file = config_file
-        response.outputs['analogs'].file = output_file
+        response.outputs['analog_pdf1'].file = analogs_pdf1
+        response.outputs['analog_pdf2'].file = analogs_pdf2
+
+        response.outputs['config1'].file = config_file1
+        response.outputs['config2'].file = config_file2
+
+        response.outputs['analogs1'].file = output_file1
+        response.outputs['analogs2'].file = output_file2
+
         response.outputs['output_netcdf'].file = simulation
-        response.outputs['target_netcdf'].file = archive
+
+        response.outputs['target_netcdf1'].file = archive1
+        response.outputs['target_netcdf2'].file = archive2
 
         if seacyc is True:
-            response.outputs['base_netcdf'].file = seasoncyc_base
-            response.outputs['sim_netcdf'].file = seasoncyc_sim
+            response.outputs['base_netcdf1'].file = seasoncyc_base1
+            response.outputs['sim_netcdf1'].file = seasoncyc_sim1
+            response.outputs['base_netcdf2'].file = seasoncyc_base2
+            response.outputs['sim_netcdf2'].file = seasoncyc_sim2
         else:
             # TODO: Still unclear how to overpass unknown number of outputs
-            dummy_base = 'dummy_base.nc'
-            dummy_sim = 'dummy_sim.nc'
-            with open(dummy_base, 'a'): os.utime(dummy_base, None)
-            with open(dummy_sim, 'a'): os.utime(dummy_sim, None)
-            response.outputs['base_netcdf'].file = dummy_base
-            response.outputs['sim_netcdf'].file = dummy_sim
+            dummy_base1 = 'dummy_base1.nc'
+            dummy_sim1 = 'dummy_sim1.nc'
+            dummy_base2 = 'dummy_base2.nc'
+            dummy_sim2 = 'dummy_sim2.nc'
+            with open(dummy_base1, 'a'): os.utime(dummy_base1, None)
+            with open(dummy_sim1, 'a'): os.utime(dummy_sim1, None)
+            with open(dummy_base2, 'a'): os.utime(dummy_base2, None)
+            with open(dummy_sim2, 'a'): os.utime(dummy_sim2, None)
+            response.outputs['base_netcdf1'].file = dummy_base1
+            response.outputs['sim_netcdf1'].file = dummy_sim1
+            response.outputs['base_netcdf2'].file = dummy_base2
+            response.outputs['sim_netcdf2'].file = dummy_sim2
 
         ########################
         # generate analog viewer
         ########################
 
-        formated_analogs_file = analogs.reformat_analogs(output_file)
-        # response.outputs['formated_analogs'].storage = FileStorage()
-        response.outputs['formated_analogs'].file = formated_analogs_file
-        LOGGER.info('analogs reformated')
-        response.update_status('reformatted analog file', 80)
+        formated_analogs_file1 = analogs.reformat_analogs(output_file1, prefix='modified-analogfile1.tsv')
+        response.outputs['formated_analogs1'].file = formated_analogs_file1
+        LOGGER.info('analogs 1 reformated')
 
-        viewer_html = analogs.render_viewer(
-            # configfile=response.outputs['config'].get_url(),
-            configfile=config_file,
-            # datafile=response.outputs['formated_analogs'].get_url())
-            datafile=formated_analogs_file)
-        response.outputs['output'].file = viewer_html
-        response.update_status('Successfully generated analogs viewer', 90)
-        LOGGER.info('rendered pages: %s ', viewer_html)
+        viewer_html1 = analogs.render_viewer(
+            configfile=config_file1,
+            datafile=formated_analogs_file1, outhtml='analogviewer1.html')
+        response.outputs['output1'].file = viewer_html1
+
+        formated_analogs_file2 = analogs.reformat_analogs(output_file1, prefix='modified-analogfile2.tsv')
+        response.outputs['formated_analogs2'].file = formated_analogs_file2
+        LOGGER.info('analogs 1 reformated')
+
+        viewer_html2 = analogs.render_viewer(
+            configfile=config_file2,
+            datafile=formated_analogs_file2, outhtml='analogviewer2.html')
+        response.outputs['output2'].file = viewer_html2
+
+        response.update_status('Successfully generated analogs viewers', 90)
+        LOGGER.info('rendered pages: %s ', viewer_html1)
+        LOGGER.info('rendered pages: %s ', viewer_html2)
 
         response.update_status('execution ended', 100)
         LOGGER.debug("total execution took %s seconds.",
                      time.time() - process_start_time)
         response.outputs['output_log'].file = 'log.txt'
         return response
+
