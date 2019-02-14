@@ -19,14 +19,13 @@ from pywps import LiteralInput
 from pywps import ComplexInput, ComplexOutput
 from pywps import Format, FORMATS
 from pywps.app.Common import Metadata
-# from pywps.inout.storage import FileStorage
 
 from blackswan.datafetch import _PRESSUREDATA_
 from blackswan.datafetch import reanalyses as rl
 from blackswan.ocgis_module import call
 from blackswan import analogs
+from blackswan import config
 
-# from blackswan.utils import rename_complexinputs
 from blackswan.utils import get_variable, get_files_size
 
 from blackswan.calculation import remove_mean_trend
@@ -34,6 +33,9 @@ from blackswan.log import init_process_logger
 
 import logging
 LOGGER = logging.getLogger("PYWPS")
+
+DEF_OBS = join(config.obs_path(), 'tas_avg_NCEP_-10_30_30_60.txt')
+_OBS = os.listdir(config.obs_path())
 
 
 class EventAttributionProcess(Process):
@@ -47,6 +49,32 @@ class EventAttributionProcess(Process):
                          min_occurs=1,
                          max_occurs=1,
                          allowed_values=_PRESSUREDATA_
+                         ),
+
+            LiteralInput("nsim", "numbers of simulated Y to generate with analogues",
+                         abstract="number of simulations",
+                         default=1000,
+                         data_type='integer',
+                         min_occurs=0,
+                         max_occurs=1,
+                         ),
+
+            ComplexInput("yfile", "file with date and value of Y",
+                         abstract="file with date and value of Y",
+                         min_occurs=0,
+                         max_occurs=1,
+                         # maxmegabites=5000,
+                         supported_formats=[Format('text/plain')]
+                         ),
+
+            LiteralInput("yfile_dict", "file with date and value of Y (from local arc)",
+                         abstract="file with date and value of Y (from local arc)",
+                         data_type='string',
+                         default=None,
+                         min_occurs=0,
+                         max_occurs=1,
+                         # maxmegabites=5000,
+                         allowed_values=['None']+_OBS
                          ),
 
             LiteralInput('BBox', 'Bounding Box',
@@ -308,10 +336,10 @@ class EventAttributionProcess(Process):
 
     def _handler(self, request, response):
 
-        LOGGER.debug('CURDIR XXXX : %s ' % (abspath(curdir)))
-        LOGGER.debug('WORKDIR XXXX : %s ' % (self.workdir))
+        # LOGGER.debug('CURDIR XXXX : %s ' % (abspath(curdir)))
+        # LOGGER.debug('WORKDIR XXXX : %s ' % (self.workdir))
         os.chdir(self.workdir)
-        LOGGER.debug('CURDIR XXXX : %s ' % (abspath(curdir)))
+        # LOGGER.debug('CURDIR XXXX : %s ' % (abspath(curdir)))
 
         init_process_logger('log.txt')
 
@@ -327,6 +355,18 @@ class EventAttributionProcess(Process):
 
         try:
             response.update_status('read input parameter : %s ' % dt.now(), 6)
+
+            nsim = request.inputs['nsim'][0].data
+            LOGGER.debug('nsim %s', nsim)
+
+            if 'yfile' in request.inputs:
+                yfile = request.inputs['yfile'][0].file
+            elif 'yfile_dict' in request.inputs and request.inputs['yfile_dict'][0].data != 'None':
+                yfile = join(config.obs_path(), request.inputs['yfile_dict'][0].data)
+            else:
+                yfile = DEF_OBS
+
+            LOGGER.debug('yfile %s', yfile)
 
             refSt1 = request.inputs['refSt1'][0].data
             refEn1 = request.inputs['refEn1'][0].data

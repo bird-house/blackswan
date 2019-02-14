@@ -253,10 +253,10 @@ class AnalogsreanalyseProcess(Process):
 
     def _handler(self, request, response):
 
-        LOGGER.debug('CURDIR XXXX : %s ' % (abspath(curdir)))
-        LOGGER.debug('WORKDIR XXXX : %s ' % (self.workdir))
+        # LOGGER.debug('CURDIR XXXX : %s ' % (abspath(curdir)))
+        # LOGGER.debug('WORKDIR XXXX : %s ' % (self.workdir))
         os.chdir(self.workdir)
-        LOGGER.debug('CURDIR XXXX : %s ' % (abspath(curdir)))
+        # LOGGER.debug('CURDIR XXXX : %s ' % (abspath(curdir)))
 
         init_process_logger('log.txt')
         # init_process_logger(os.path.join(self.workdir, 'log.txt'))
@@ -648,7 +648,7 @@ class AnalogsreanalyseProcess(Process):
             with open(analogs_pdf, 'a'): os.utime(analogs_pdf, None)
 
         response.update_status('preparing output', 70)
-
+        
         response.outputs['analog_pdf'].file = analogs_pdf
         response.outputs['config'].file = config_file
         response.outputs['analogs'].file = output_file

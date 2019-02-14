@@ -582,8 +582,9 @@ def plot_analogs(configfile='config.txt', soutpdf='Analogs.pdf', simday='all', *
             mean_ana = mean_ana/sum(w_corr)
 
             """
-        simoutpdf = pdfmerge(outlist)
+        simoutpdf = pdfmerge(outlist, outpdf=soutpdf)
         # clean
+        
         for i_pdf in outlist:
             os.remove(i_pdf)
 
