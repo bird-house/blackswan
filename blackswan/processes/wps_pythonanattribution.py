@@ -24,10 +24,13 @@ from datetime import datetime as dt
 from blackswan.pythonanattribution import analogs_generator
 # from blackswan.utils import archive, archiveextract, get_calendar
 from tempfile import mkstemp
-from os import path, system, chdir
+from os import path, system, chdir, listdir
 
 import logging
 LOGGER = logging.getLogger("PYWPS")
+
+DEF_OBS = path.join(config.obs_path(), 'tas_avg_NCEP_-10_30_30_60.txt')
+_OBS = listdir(config.obs_path())
 
 
 class PythonanattributionProcess(Process):
@@ -37,19 +40,27 @@ class PythonanattributionProcess(Process):
         inputs = [
             LiteralInput("nsim", "numbers of simulated Y to generate with analogues",
                          abstract="number of simulations",
-                         default=20,
+                         default=1000,
                          data_type='integer',
                          min_occurs=0,
                          max_occurs=1,
                          ),
-            # ComplexInput("yfile", "file with date and value of Y",
-            #              abstract="file with date and value of Y",
-            #              # data_type='string',
-            #              min_occurs=1,
-            #              max_occurs=1,
-            #              # maxmegabites=5000,
-            #              supported_formats=[Format('text/plain')]
-            #             ),
+            ComplexInput("yfile", "file with date and value of Y",
+                         abstract="file with date and value of Y",
+                         min_occurs=0,
+                         max_occurs=1,
+                         # maxmegabites=5000,
+                         supported_formats=[Format('text/plain')]
+                         ),
+            LiteralInput("yfile_dict", "file with date and value of Y (from local arc)",
+                         abstract="file with date and value of Y (from local arc)",
+                         data_type='string',
+                         default=None,
+                         min_occurs=0,
+                         max_occurs=1,
+                         # maxmegabites=5000,
+                         allowed_values=['None']+_OBS
+                         ),
             ComplexInput("anafile1", "Analogues result file for period P1",
                          abstract="Analogues text file computed by Analogues of Circulation processes",
                          # data_type='string',
@@ -90,7 +101,7 @@ class PythonanattributionProcess(Process):
             self._handler,
             identifier="pythonanattribution",
             title="Attribution with analogues",
-            abstract='Attributioms with analogues',
+            abstract='Attributions with analogues',
             version="0.10",
             metadata=[
                 Metadata('LSCE', 'http://www.lsce.ipsl.fr/en/index.php'),
@@ -126,12 +137,12 @@ class PythonanattributionProcess(Process):
             nsim = request.inputs['nsim'][0].data
             LOGGER.info('nsim %s', nsim)
 
-            # yfile = request.inputs['yfile'][0].file
-            # need to set default or let user to upload one
-            # '/homel/nkadyg/birdhouse/var/lib/pywps/cache/blackswan/tas_avg_NCEP_-10_30_30_60.txt' 
-            # ano_tas_avg_NCEP_-10_30_30_60.txt'
-
-            yfile = path.join(config.obs_path(), 'tas_avg_NCEP_-10_30_30_60.txt')
+            if 'yfile' in request.inputs:
+                yfile = request.inputs['yfile'][0].file
+            elif 'yfile_dict' in request.inputs and request.inputs['yfile_dict'][0].data != 'None':
+                yfile = path.join(config.obs_path(), request.inputs['yfile_dict'][0].data)
+            else:
+                yfile = DEF_OBS
 
             LOGGER.info('yfile %s', yfile)
 

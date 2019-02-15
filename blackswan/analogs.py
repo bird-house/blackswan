@@ -114,7 +114,8 @@ def get_configfile(files,
                    period=["1973-01-01", "2012-12-31"],
                    bbox="-180.0,-90.0,180,90.0",
                    calccor=True,
-                   silent=False):
+                   silent=False,
+                   config_file = "config.txt"):
     """
     Generates the configuration file for the CASTf90 calculation.
 
@@ -152,7 +153,7 @@ def get_configfile(files,
     # NB: if order or format or number changes, need to edit wps_analogs_viewer.py
     # and template_analogviewer.html where these scripts read in the config
     # params
-    config_file = "config.txt"
+    # config_file = "config.txt"
 
     config = open(config_file, "w")
 
@@ -231,7 +232,7 @@ def get_configfile(files,
 #   return nc_subset
 
 
-def seacyc(archive, simulation, method='base'):
+def seacyc(archive, simulation, basecyc='seasoncyc_base.nc', simcyc='seasoncyc_sim.nc', method='base'):
     """
     Subtracts the seasonal cycle.
 
@@ -255,42 +256,26 @@ def seacyc(archive, simulation, method='base'):
 
         if method == 'base':
             seasoncyc_base = cdo.ydaymean(
-                input=archive, output='seasoncyc_base.nc')
-            # variable = get_variable(archive)
-            # seasoncyc_base = call(resource=archive,
-            # variable=variable,
-            # prefix='seasoncyc_base',
-            # calc=[{'func': 'mean', 'name': variable}],
-            # calc_grouping=['day','month'] )
-
-            LOGGER.debug('seasoncyc_base calculated : %s' % seasoncyc_base)
-            cdo.ydaymean(input=archive, output='seasoncyc_base.nc')
-            seasoncyc_sim = 'seasoncyc_sim.nc'
+                input=archive, output=basecyc)
+            seasoncyc_sim = simcyc
             copy(seasoncyc_base, seasoncyc_sim)
+            LOGGER.debug('seasoncyc_base calculated : %s' % seasoncyc_base)
         elif method == 'sim':
-            # seasoncyc_sim  = call(resource=archive,
-            # variable=variable,
-            # prefix='seasoncyc_sim',
-            # calc=[{'func': 'mean', 'name': variable}],
-            # calc_grouping=['day','month'] )
-            cdo.ydaymean(input=simulation, output='seasoncyc_sim.nc')
-            seasoncyc_base = 'seasoncyc_base.nc'
+            seasoncyc_sim  = cdo.ydaymean(
+                input=simulation, output=simcyc)
+            seasoncyc_base = basecyc
             copy(seasoncyc_sim, seasoncyc_base)
         elif method == 'own':
-            # seasoncyc_base = call(resource=archive,
-            # variable=variable,
-            # prefix='seasoncyc_base',
-            # calc=[{'func': 'mean', 'name': variable}],
-            # calc_grouping=['day','month'] )
             seasoncyc_base = cdo.ydaymean(
-                input=archive, output='seasoncyc_base.nc')
-            # seasoncyc_sim  = call(resource=archive,
-            # variable=variable,
-            # prefix='seasoncyc_sim',
-            # calc=[{'func': 'mean', 'name': variable}],
-            # calc_grouping=['day','month'] )
+                input=archive, output=basecyc)
             seasoncyc_sim = cdo.ydaymean(
-                input=simulation, output='seasoncyc_sim.nc')
+                input=simulation, output=simcyc)
+            nt = cdo.ntime(input=seasoncyc_sim)
+            nt = int(nt[0]) # check number of timesteps
+            if (nt<365):
+                LOGGER.debug('Simulation is to short ( %s ) to calculate seasonal cycle, use reference instead', str(nt))
+                seasoncyc_sim = simcyc
+                copy(seasoncyc_base, seasoncyc_sim)
         else:
             raise Exception('normalisation method not found')
 
@@ -393,7 +378,7 @@ def reformat_analogs(analogs, prefix='modified-analogfile.tsv'):
     return analogs_mod
 
 
-def render_viewer(configfile, datafile):
+def render_viewer(configfile, datafile, outhtml='analogviewer.html'):
     """
     Generate an analogs viewer HTML page based on a template.
 
@@ -404,7 +389,8 @@ def render_viewer(configfile, datafile):
     """
     try:
         page = 'analogviewer.html'
-        with open(page, 'w') as fp:
+        page_tw = outhtml
+        with open(page_tw, 'w') as fp:
             fp.write(templating.render_template(
                 page,
                 configfile=configfile,
@@ -417,10 +403,10 @@ def render_viewer(configfile, datafile):
         LOGGER.exception(msg)
         raise Exception(msg)
     else:
-        return page
+        return page_tw
 
 
-def plot_analogs(configfile='config.txt', simday='all', **kwargs):
+def plot_analogs(configfile='config.txt', soutpdf='Analogs.pdf', simday='all', **kwargs):
     """
     """
 
@@ -431,7 +417,7 @@ def plot_analogs(configfile='config.txt', simday='all', **kwargs):
 
     from blackswan.visualisation import pdfmerge
 
-    simoutpdf = 'Analogs.pdf'
+    simoutpdf = soutpdf # 'Analogs.pdf'
 
     if (os.path.isfile(configfile) == True):
         curdir, confile = os.path.split(os.path.abspath(configfile))
@@ -596,14 +582,14 @@ def plot_analogs(configfile='config.txt', simday='all', **kwargs):
             mean_ana = mean_ana/sum(w_corr)
 
             """
-        simoutpdf = pdfmerge(outlist)
-    # get the information from config file:
-    # netcdf files, period, Nanalogs, ouput analogs
+        simoutpdf = pdfmerge(outlist, outpdf=soutpdf)
+        # clean
+        
+        for i_pdf in outlist:
+            os.remove(i_pdf)
 
-    # get the information from config file:
-    # netcdf files, period, Nanalogs, ouput analogs
     else:
-        simoutpdf = 'Analogs.pdf'
+        simoutpdf = soutpdf # 'Analogs.pdf'
         # TODO: call this func with analogfile = '..',
         # arguments came from kwargs
         # need to prescribe all input info - to use with external analogs results.

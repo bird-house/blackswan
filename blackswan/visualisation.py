@@ -555,7 +555,7 @@ LOGGER = logging.getLogger("PYWPS")
 #     return image
 
 
-def pdfmerge(pdfs):
+def pdfmerge(pdfs, outpdf=None):
     """
     merge a list of pdfs
 
@@ -570,7 +570,10 @@ def pdfmerge(pdfs):
         merger = PdfFileMerger()
         for pdf in pdfs:
             merger.append(pdf)
-        _, mergedpdf = mkstemp(dir='.', suffix='.pdf')
+        if outpdf:
+            mergedpdf=outpdf
+        else:
+            _, mergedpdf = mkstemp(dir='.', suffix='.pdf')
         merger.write(mergedpdf)
     except:
         LOGGER.exception('failed to merge pdfs')
