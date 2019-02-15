@@ -144,13 +144,6 @@ class PythonanattributionProcess(Process):
             else:
                 yfile = DEF_OBS
 
-            # yfile = request.inputs['yfile'][0].file
-            # need to set default or let user to upload one
-            # '/homel/nkadyg/birdhouse/var/lib/pywps/cache/blackswan/tas_avg_NCEP_-10_30_30_60.txt' 
-            # ano_tas_avg_NCEP_-10_30_30_60.txt'
-
-            # yfile = path.join(config.obs_path(), 'tas_avg_NCEP_-10_30_30_60.txt')
-
             LOGGER.info('yfile %s', yfile)
 
             anafile1 = request.inputs['anafile1'][0].file

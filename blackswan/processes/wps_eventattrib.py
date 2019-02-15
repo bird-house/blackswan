@@ -1,5 +1,7 @@
 import os
 
+import pandas # Should be moved to module pythonattribution
+
 from os.path import join, abspath, dirname, getsize, curdir, isfile
 
 from datetime import date
@@ -23,6 +25,7 @@ from pywps.app.Common import Metadata
 from blackswan.datafetch import _PRESSUREDATA_
 from blackswan.datafetch import reanalyses as rl
 from blackswan.ocgis_module import call
+from blackswan.pythonanattribution import analogs_generator
 from blackswan import analogs
 from blackswan import config
 
@@ -308,6 +311,18 @@ class EventAttributionProcess(Process):
             ComplexOutput("output2", "Analogues Viewer html page",
                           abstract="Interactive visualization of calculated analogues",
                           supported_formats=[Format("text/html")],
+                          as_reference=True,
+                          ),
+
+            ComplexOutput("Ysims", "Data.Frame of simulated Y in period P1 and P2",
+                          abstract="Simulated Y (nsim realisation of mean value for event period)",
+                          supported_formats=[Format('text/plain')],
+                          as_reference=True,
+                          ),
+
+            ComplexOutput("Py_output_graphic", "Histogram of simulated Y in period P1 and P2",
+                          abstract="Histograms of Y",
+                          supported_formats=[Format('image/pdf')],
                           as_reference=True,
                           ),
 
@@ -828,6 +843,63 @@ class EventAttributionProcess(Process):
             response.outputs['base_netcdf2'].file = dummy_base2
             response.outputs['sim_netcdf2'].file = dummy_sim2
 
+
+        ########################
+        # analog generator     #
+        ########################
+
+        # for period P1
+        ysim_p1 = analogs_generator(anafile=output_file1, yfile=yfile, nsim=nsim)
+        ymean_p1 = ysim_p1.mean(axis=1)
+
+        # for period P2
+        ysim_p2 = analogs_generator(anafile=output_file2, yfile=yfile, nsim=nsim)
+        ymean_p2 = ysim_p2.mean(axis=1)
+
+        # Format the data into a Data.Frame to plot boxplots
+        plotdat = pandas.concat([ymean_p1, ymean_p2], axis=1)
+        plotdat.columns = ["P1", "P2"]
+        # print plotdat
+
+        output_txt = "Ysim_" + simDatesString+'.txt'
+        plotdat.to_csv(output_txt, sep=' ', index=False, header=True)
+        response.outputs['Ysims'].file = output_txt
+
+        LOGGER.debug('writing output_txt done!')
+        LOGGER.debug('analogue generator done!')
+
+        #  MOVE TO VISUALISATION!!
+        from matplotlib import use
+        use('Agg')
+        import matplotlib.pyplot as plt
+
+        # compute the average of Y during event period
+        # ytable = pandas.read_table(yfile, sep = " ", skipinitialspace = True)
+        # idx = [x >= 20180101 and x <= 20180131 for x in ytable.date]
+        # tas_jan18 = ytable.iloc[idx, 1]
+        # tas_jan18 = tas_jan18.mean(axis=0)
+        from tempfile import mkstemp
+        ip, output_graphics = mkstemp(dir=curdir, suffix='.pdf', prefix='anna_plots')
+        fig1 = plt.figure()
+        # plt.axvline(x=tas_jan18)
+        plt.hist(ymean_p1, alpha=0.5, label='P1')
+        plt.hist(ymean_p2, alpha=0.5, label='P2')
+        plt.legend(loc='upper right')
+        LOGGER.debug('plot1 done!')
+
+        fig2 = plt.figure()
+        plt.boxplot([ymean_p1, ymean_p2])
+        LOGGER.debug('plot2 done!')
+        # plt.axhline(y=tas_jan18)
+
+        from matplotlib.backends.backend_pdf import PdfPages
+        pp = PdfPages(output_graphics)
+        pp.savefig(fig1)
+        pp.savefig(fig2)
+        pp.close()
+        response.outputs['Py_output_graphic'].file = output_graphics
+        # ########################
+
         ########################
         # generate analog viewer
         ########################
@@ -841,7 +913,7 @@ class EventAttributionProcess(Process):
             datafile=formated_analogs_file1, outhtml='analogviewer1.html')
         response.outputs['output1'].file = viewer_html1
 
-        formated_analogs_file2 = analogs.reformat_analogs(output_file1, prefix='modified-analogfile2.tsv')
+        formated_analogs_file2 = analogs.reformat_analogs(output_file2, prefix='modified-analogfile2.tsv')
         response.outputs['formated_analogs2'].file = formated_analogs_file2
         LOGGER.info('analogs 1 reformated')
 
@@ -859,4 +931,36 @@ class EventAttributionProcess(Process):
                      time.time() - process_start_time)
         response.outputs['output_log'].file = 'log.txt'
         return response
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

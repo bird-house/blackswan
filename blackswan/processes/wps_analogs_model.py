@@ -250,10 +250,10 @@ class AnalogsmodelProcess(Process):
 
     def _handler(self, request, response):
 
-        LOGGER.debug('CURDIR XXXX : %s ' % (path.abspath(path.curdir)))
-        LOGGER.debug('WORKDIR XXXX : %s ' % (self.workdir))
+        # LOGGER.debug('CURDIR XXXX : %s ' % (path.abspath(path.curdir)))
+        # LOGGER.debug('WORKDIR XXXX : %s ' % (self.workdir))
         os.chdir(self.workdir)
-        LOGGER.debug('CURDIR XXXX : %s ' % (path.abspath(path.curdir)))
+        # LOGGER.debug('CURDIR XXXX : %s ' % (path.abspath(path.curdir)))
 
         init_process_logger('log.txt')
 
