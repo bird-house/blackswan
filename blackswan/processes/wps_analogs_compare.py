@@ -1,0 +1,784 @@
+from datetime import date
+from datetime import datetime as dt
+from datetime import time as dt_time
+import time  # performance test
+from os import path, system, environ, getuid, utime, chdir
+
+#from tempfile import mkstemp
+
+import uuid
+from netCDF4 import Dataset
+from numpy import squeeze
+from shutil import move
+
+from blackswan import analogs
+from blackswan.ocgis_module import call
+from blackswan.datafetch import reanalyses
+from blackswan.utils import get_variable, rename_variable
+from blackswan.utils import rename_complexinputs
+from blackswan.utils import archiveextract
+from blackswan.utils import get_timerange, get_calendar
+from blackswan.log import init_process_logger
+from blackswan.datafetch import _PRESSUREDATA_
+
+from pywps import Process
+from pywps import LiteralInput, LiteralOutput
+from pywps import ComplexInput, ComplexOutput
+from pywps import Format, FORMATS
+from pywps.app.Common import Metadata
+
+import logging
+LOGGER = logging.getLogger("PYWPS")
+
+
+class AnalogscompareProcess(Process):
+    def __init__(self):
+        inputs = [
+            ComplexInput('resource', 'Resource',
+                         abstract='NetCDF Files or archive (tar/zip) containing daily netCDF files.',
+                         metadata=[Metadata('Info')],
+                         min_occurs=1,
+                         max_occurs=1000,
+                         supported_formats=[
+                             Format('application/x-netcdf'),
+                             Format('application/x-tar'),
+                             Format('application/zip'),
+                         ]),
+
+            LiteralInput("reanalyses", "Reanalyses Data",
+                         abstract="Choose a reanalyses model for comparison",
+                         default="NCEP_slp",
+                         data_type='string',
+                         min_occurs=1,
+                         max_occurs=1,
+                         allowed_values=_PRESSUREDATA_
+                         ),
+
+            LiteralInput('BBox', 'Bounding Box',
+                         data_type='string',
+                         abstract="Enter a bbox: min_lon, max_lon, min_lat, max_lat."
+                            " min_lon=Western longitude,"
+                            " max_lon=Eastern longitude,"
+                            " min_lat=Southern or northern latitude,"
+                            " max_lat=Northern or southern latitude."
+                            " For example: -80,50,20,70",
+                         min_occurs=0,
+                         max_occurs=1,
+                         default='-20,40,30,70',
+                         ),
+
+            LiteralInput('dateSt', 'Start date of analysis period',
+                         data_type='date',
+                         abstract='First day of the period to be analysed',
+                         default='2018-01-01',
+                         min_occurs=0,
+                         max_occurs=1,
+                         ),
+
+            LiteralInput('dateEn', 'End date of analysis period',
+                         data_type='date',
+                         abstract='Last day of the period to be analysed',
+                         default='2018-01-10',
+                         min_occurs=0,
+                         max_occurs=1,
+                         ),
+
+            LiteralInput('refSt', 'Start date of reference period',
+                         data_type='date',
+                         abstract='First day of the period where analogues being picked',
+                         default='1950-01-01',
+                         min_occurs=0,
+                         max_occurs=1,
+                         ),
+
+            LiteralInput('refEn', 'End date of reference period',
+                         data_type='date',
+                         abstract='Last day of the period where analogues being picked',
+                         default='2005-12-31',
+                         min_occurs=0,
+                         max_occurs=1,
+                         ),
+
+            LiteralInput("normalize", "normalization",
+                         abstract="Normalize by subtraction of annual cycle",
+                         default='None',
+                         data_type='string',
+                         min_occurs=0,
+                         max_occurs=1,
+                         allowed_values=['None', 'base', 'sim', 'own']
+                         ),
+
+            LiteralInput("seasonwin", "Seasonal window",
+                         abstract="Number of days befor and after the date to be analysed",
+                         default='30',
+                         data_type='integer',
+                         min_occurs=0,
+                         max_occurs=1,
+                         ),
+
+            LiteralInput("nanalog", "Nr of analogues",
+                         abstract="Number of analogues to be detected",
+                         default='20',
+                         data_type='integer',
+                         min_occurs=0,
+                         max_occurs=1,
+                         ),
+
+            LiteralInput("dist", "Distance",
+                         abstract="Distance function to define analogues",
+                         default='euclidean',
+                         data_type='string',
+                         min_occurs=0,
+                         max_occurs=1,
+                         allowed_values=['euclidean', 'mahalanobis', 'cosine']
+                         ),
+
+            LiteralInput("outformat", "output file format",
+                         abstract="Choose the format for the analogue output file",
+                         default="ascii",
+                         data_type='string',
+                         min_occurs=0,
+                         max_occurs=1,
+                         allowed_values=['ascii', 'netCDF4']
+                         ),
+
+            LiteralInput("timewin", "Time window",
+                         abstract="Number of days following the analogue day the distance will be averaged",
+                         default='1',
+                         data_type='integer',
+                         min_occurs=0,
+                         max_occurs=1,
+                         ),
+
+            LiteralInput("direction", "Comparison direction",
+                         abstract="Compare direction. Pick analog days in Modeldata for a simulation period in Reanalyses data \
+                                    (re2mo) or vice versa",
+                         default='re2mo',
+                         data_type='string',
+                         min_occurs=0,
+                         max_occurs=1,
+                         allowed_values=['mo2re', 're2mo']
+                         ),
+            LiteralInput("regrset", "Regrid direction ",
+                         abstract="Regrid direction. Regrid everything to reanalyses or to the model grid",
+                         default='reanalyses',
+                         data_type='string',
+                         min_occurs=0,
+                         max_occurs=1,
+                         allowed_values=['reanalyses']
+                         # allowed_values=['reanalyses', 'model']
+                         ),
+
+            LiteralInput("plot", "Plot",
+                         abstract="Plot simulations and Mean/Best/Last analogs?",
+                         default='No',
+                         data_type='string',
+                         min_occurs=0,
+                         max_occurs=1,
+                         allowed_values=['Yes', 'No']
+                         ),
+        ]
+        outputs = [
+            ComplexOutput("analog_pdf", "Maps with mean analogs and simulation",
+                          abstract="Analogs Maps",
+                          supported_formats=[Format('image/pdf')],
+                          as_reference=True,
+                          ),
+
+            ComplexOutput("config", "Config File",
+                          abstract="Config file used for the Fortran process",
+                          supported_formats=[Format("text/plain")],
+                          as_reference=True,
+                          ),
+
+            ComplexOutput("analogs", "Analogues File",
+                          abstract="mulit-column text file",
+                          supported_formats=[Format("text/plain")],
+                          as_reference=True,
+                          ),
+
+            ComplexOutput("formated_analogs", "Formated Analogues File",
+                          abstract="Formated analogues file for viewer",
+                          supported_formats=[Format("text/plain")],
+                          as_reference=True,
+                          ),
+
+            ComplexOutput('output_netcdf', 'Subsets for model',
+                          abstract="Prepared netCDF file as input for weatherregime calculation",
+                          as_reference=True,
+                          supported_formats=[Format('application/x-netcdf')]
+                          ),
+
+            ComplexOutput("target_netcdf", 'subset of ref file',
+                          abstract="File with subset and normaized values of target model",
+                          as_reference=True,
+                          supported_formats=[Format('application/x-netcdf')]
+                          ),
+
+            ComplexOutput("output", "Analogues Viewer html page",
+                          abstract="Interactive visualization of calculated analogues",
+                          supported_formats=[Format("text/html")],
+                          as_reference=True,
+                          ),
+
+            ComplexOutput('output_log', 'Logging information',
+                          abstract="Collected logs during process run.",
+                          as_reference=True,
+                          supported_formats=[Format('text/plain')]
+                          ),
+        ]
+
+        super(AnalogscompareProcess, self).__init__(
+            self._handler,
+            identifier="analogs_compare",
+            title="Analogues of circulation (based on reanalyses data and climate model data)",
+            abstract='Search for days with analogue pressure pattern for reanalyses data sets',
+            version="0.10",
+            metadata=[
+                Metadata('LSCE', 'http://www.lsce.ipsl.fr/en/index.php'),
+                Metadata('Doc', 'http://blackswan.readthedocs.io/en/latest/'),
+            ],
+            inputs=inputs,
+            outputs=outputs,
+            status_supported=True,
+            store_supported=True,
+        )
+
+    def _handler(self, request, response):
+        chdir(self.workdir)
+        init_process_logger('log.txt')
+
+        process_start_time = time.time()  # measure process execution time ...
+        response.update_status('execution started at : %s ' % dt.now(), 5)
+
+        start_time = time.time()  # measure init ...
+
+        resource = archiveextract(resource=rename_complexinputs(request.inputs['resource']))
+
+        # Filter resource:
+        if type(resource) == list:
+            resource = sorted(resource, key=lambda i: path.splitext(path.basename(i))[0])
+        else:
+            resource = [resource]
+
+        refSt = request.inputs['refSt'][0].data
+        refEn = request.inputs['refEn'][0].data
+        dateSt = request.inputs['dateSt'][0].data
+        dateEn = request.inputs['dateEn'][0].data
+
+        regrset = request.inputs['regrset'][0].data
+        direction = request.inputs['direction'][0].data
+        # Check if model has 360_day calendar:
+
+        try:
+            modcal, calunits = get_calendar(resource[0])
+            LOGGER.debug('CALENDAR: %s' % (modcal))
+            if '360_day' in modcal:
+                if direction == 're2mo':
+                    if refSt.day == 31:
+                        refSt = refSt.replace(day=30)
+                        LOGGER.debug('Date has been changed for: %s' % (refSt))
+                    if refEn.day == 31:
+                        refEn = refEn.replace(day=30)
+                        LOGGER.debug('Date has been changed for: %s' % (refEn))
+                else:  # mo2re
+                    if dateSt.day == 31:
+                        dateSt = dateSt.replace(day=30)
+                        LOGGER.debug('Date has been changed for: %s' % (dateSt))
+                    if dateEn.day == 31:
+                        dateEn = dateEn.replace(day=30)
+                        LOGGER.debug('Date has been changed for: %s' % (dateEn))
+        except:
+            LOGGER.debug('Could not detect calendar')
+
+        seasonwin = request.inputs['seasonwin'][0].data
+        nanalog = request.inputs['nanalog'][0].data
+
+        bboxDef = '-20,40,30,70'  # in general format
+
+        bbox = []
+        bboxStr = request.inputs['BBox'][0].data
+        LOGGER.debug('BBOX selected by user: %s ' % (bboxStr))
+        bboxStr = bboxStr.split(',')
+
+        # Checking for wrong cordinates and apply default if nesessary
+        if (abs(float(bboxStr[0])) > 180 or
+                abs(float(bboxStr[1]) > 180) or
+                abs(float(bboxStr[2]) > 90) or
+                abs(float(bboxStr[3])) > 90):
+            bboxStr = bboxDef  # request.inputs['BBox'].default  # .default doesn't work anymore!!!
+            LOGGER.debug('BBOX is out of the range, using default instead: %s ' % (bboxStr))
+            bboxStr = bboxStr.split(',')
+
+        bbox.append(float(bboxStr[0]))
+        bbox.append(float(bboxStr[2]))
+        bbox.append(float(bboxStr[1]))
+        bbox.append(float(bboxStr[3]))
+
+        normalize = request.inputs['normalize'][0].data
+        plot = request.inputs['plot'][0].data
+        distance = request.inputs['dist'][0].data
+        outformat = request.inputs['outformat'][0].data
+        timewin = request.inputs['timewin'][0].data
+
+        model_var = request.inputs['reanalyses'][0].data
+        model, var = model_var.split('_')
+
+        try:
+            if direction == 're2mo':
+                anaSt = dt.combine(dateSt, dt_time(0, 0))  # dt.strptime(dateSt[0], '%Y-%m-%d')
+                anaEn = dt.combine(dateEn, dt_time(0, 0))  # dt.strptime(dateEn[0], '%Y-%m-%d')
+                refSt = dt.combine(refSt, dt_time(12, 0))  # dt.strptime(refSt[0], '%Y-%m-%d')
+                refEn = dt.combine(refEn, dt_time(12, 0))  # dt.strptime(refEn[0], '%Y-%m-%d')
+                r_time_range = [anaSt, anaEn]
+                m_time_range = [refSt, refEn]
+            elif direction == 'mo2re':
+                anaSt = dt.combine(dateSt, dt_time(12, 0))  # dt.strptime(refSt[0], '%Y-%m-%d')
+                anaEn = dt.combine(dateEn, dt_time(12, 0))  # dt.strptime(refEn[0], '%Y-%m-%d')
+                refSt = dt.combine(refSt, dt_time(0, 0))   # dt.strptime(dateSt[0], '%Y-%m-%d')
+                refEn = dt.combine(refEn, dt_time(0, 0))   # dt.strptime(dateEn[0], '%Y-%m-%d')
+                r_time_range = [refSt, refEn]
+                m_time_range = [anaSt, anaEn]
+            else:
+                LOGGER.exception('failed to find time periods for comparison direction')
+        except:
+            msg = 'failed to put simulation and reference time in order'
+            LOGGER.exception(msg)
+            raise Exception(msg)
+
+        if normalize == 'None':
+            seacyc = False
+        else:
+            seacyc = True
+
+        if outformat == 'ascii':
+            outformat = '.txt'
+        elif outformat == 'netCDF':
+            outformat = '.nc'
+        else:
+            LOGGER.exception('output format not valid')
+
+        try:
+            if model == 'NCEP':
+                # getlevel = True
+                getlevel = False
+                if 'z' in var:
+                    level = var.strip('z')
+                    variable = 'hgt'
+                    # conform_units_to='hPa'
+                else:
+                    variable = 'slp'
+                    level = None
+                    # conform_units_to='hPa'
+            elif '20CRV2' in model:
+                getlevel = False
+                if 'z' in var:
+                    variable = 'hgt'
+                    level = var.strip('z')
+                    # conform_units_to=None
+                else:
+                    variable = 'prmsl'
+                    level = None
+                    # conform_units_to='hPa'
+            else:
+                LOGGER.exception('Reanalyses model not known')
+            LOGGER.info('environment set')
+        except:
+            msg = 'failed to set environment'
+            LOGGER.exception(msg)
+            raise Exception(msg)
+
+        # LOGGER.exception("init took %s seconds.", time.time() - start_time)
+        response.update_status('Read in the arguments', 10)
+
+        #################
+        # get input data
+        #################
+        # TODO: do not forget to select years
+
+        start_time = time.time()  # measure get_input_data ...
+        response.update_status('fetching input data', 20)
+        try:
+            if direction == 're2mo':
+                nc_reanalyses = reanalyses(start=anaSt.year, end=anaEn.year,
+                                           variable=var, dataset=model, getlevel=getlevel)
+            else:
+                nc_reanalyses = reanalyses(start=refSt.year, end=refEn.year,
+                                           variable=var, dataset=model, getlevel=getlevel)
+
+            if type(nc_reanalyses) == list:
+                nc_reanalyses = sorted(nc_reanalyses, key=lambda i: path.splitext(path.basename(i))[0])
+            else:
+                nc_reanalyses = [nc_reanalyses]
+
+            # For 20CRV2 geopotential height, daily dataset for 100 years is about 50 Gb
+            # So it makes sense, to operate it step-by-step
+            # TODO: need to create dictionary for such datasets (for models as well)
+            # TODO: benchmark the method bellow for NCEP z500 for 60 years, may be use the same (!)
+            # TODO Now everything regrid to the reanalysis
+
+            # if ('20CRV2' in model) and ('z' in var):
+            if ('z' in var):
+                tmp_total = []
+                origvar = get_variable(nc_reanalyses[0])
+
+                for z in nc_reanalyses:
+                    # tmp_n = 'tmp_%s' % (uuid.uuid1())
+                    b0 = call(resource=z, variable=origvar, level_range=[int(level), int(level)], geom=bbox,
+                    spatial_wrapping='wrap',prefix='levdom_' + path.basename(z)[0:-3])
+                    tmp_total.append(b0)
+
+                tmp_total = sorted(tmp_total, key=lambda i: path.splitext(path.basename(i))[0])
+                inter_subset_tmp = call(resource=tmp_total, variable=origvar, time_range=r_time_range)
+
+                # Create new variable
+                ds = Dataset(inter_subset_tmp, mode='a')
+                z_var = ds.variables.pop(origvar)
+                dims = z_var.dimensions
+                new_var = ds.createVariable('z%s' % level, z_var.dtype, dimensions=(dims[0], dims[2], dims[3]))
+                new_var[:, :, :] = squeeze(z_var[:, 0, :, :])
+                # new_var.setncatts({k: z_var.getncattr(k) for k in z_var.ncattrs()})
+                ds.close()
+                nc_subset = call(inter_subset_tmp, variable='z%s' % level)
+                # Clean
+                for i in tmp_total:
+                    tbr = 'rm -f %s' % (i)
+                    system(tbr)
+                # for i in inter_subset_tmp
+                tbr = 'rm -f %s' % (inter_subset_tmp)
+                system(tbr)
+            else:
+                # TODO: ADD HERE serial as well as in analogs reanalysis process!!
+                nc_subset = call(resource=nc_reanalyses, variable=var,
+                                 geom=bbox, spatial_wrapping='wrap', time_range=r_time_range,
+                                 )
+
+            response.update_status('**** Input reanalyses data fetched', 30)
+        except:
+            msg = 'failed to fetch or subset input files'
+            LOGGER.exception(msg)
+            raise Exception(msg)
+
+        ########################
+        # input data preperation
+        ########################
+        response.update_status('Start preparing input data', 40)
+
+        m_start = m_time_range[0]
+        m_end = m_time_range[1]
+ 
+        # ===============================================================
+        # REMOVE resources from the list which are out of interest from the list
+        # (years > and < than requested for calculation)
+
+        tmp_resource = []
+
+        for re in resource:
+            s,e = get_timerange(re)
+            tmpSt = dt.strptime(s, '%Y%m%d')
+            tmpEn = dt.strptime(e, '%Y%m%d')
+            if ((tmpSt <= m_end) and (tmpEn >= m_start)):
+                tmp_resource.append(re)
+                LOGGER.debug('Selected file: %s ' % (re))
+        resource = tmp_resource
+
+        start_time = time.time()  # mesure data preperation ...
+        # TODO: Check the callendars ! for model vs reanalyses.
+        # TODO: Check the units! model vs reanalyses.
+        try:
+            m_total = []
+            modvar = get_variable(resource)
+            # resource properties
+            ds = Dataset(resource[0])
+            m_var = ds.variables[modvar]
+            dims = list(m_var.dimensions)
+            dimlen = len(dims)
+
+            try:
+                model_id = ds.getncattr('model_id')
+            except AttributeError:
+                model_id = 'Unknown model'
+
+            LOGGER.debug('MODEL: %s ' % (model_id))
+
+            lev_units = 'hPa'
+
+            if (dimlen > 3):
+                lev = ds.variables[dims[1]]
+                # TODO: actually index [1] need to be detected... assuming zg(time, plev, lat, lon)
+                lev_units = lev.units
+
+                if (lev_units == 'Pa'):
+                    m_level = str(int(level)*100)
+                else:
+                    m_level = level
+            else:
+                m_level = None
+
+            if level == None:
+                level_range = None
+            else:
+                level_range = [int(m_level), int(m_level)]
+
+            ds.close()
+
+            for z in resource:
+                tmp_n = 'tmp_%s' % (uuid.uuid1())
+                # TODO: Important! if only 1 file - select time period from that first!
+
+                # select level and regrid
+
+                # \/\/ working version 19Feb2019
+                # b0 = call(resource=z, variable=modvar, level_range=level_range,
+                #         spatial_wrapping='wrap', cdover='system',
+                #         regrid_destination=nc_reanalyses[0], regrid_options='bil', prefix=tmp_n)
+
+                try:
+                    b0 = call(resource=z, variable=modvar, level_range=level_range,
+                            spatial_wrapping='wrap', cdover='system',
+                            regrid_destination=nc_subset, regrid_options='bil', prefix=tmp_n)
+                except:
+                    b0 = call(resource=z, variable=modvar, level_range=level_range,
+                            spatial_wrapping='wrap', cdover='system',
+                            regrid_destination=nc_reanalyses[0], regrid_options='bil', prefix=tmp_n)
+
+                # select domain (already selected in fact, if regrided to 'nc_subset')
+                b01 = call(resource=b0, geom=bbox, spatial_wrapping='wrap', prefix='levregr_' + path.basename(z)[0:-3])
+
+                # TODO: REPLACE rm -f by os.remove() !
+                tbr = 'rm -f %s' % (b0)
+                system(tbr)
+                tbr = 'rm -f %s.nc' % (tmp_n)
+                system(tbr)
+                # get full resource
+                m_total.append(b01)
+
+            model_subset = call(m_total, time_range=m_time_range)
+
+            for i in m_total:
+                tbr = 'rm -f %s' % (i)
+                system(tbr)
+
+            if m_level is not None:
+                # Create new variable in model set
+                ds = Dataset(model_subset, mode='a')
+                mod_var = ds.variables.pop(modvar)
+                dims = mod_var.dimensions
+                new_modvar = ds.createVariable('z%s' % level, mod_var.dtype, dimensions=(dims[0], dims[2], dims[3]))
+                new_modvar[:, :, :] = squeeze(mod_var[:, 0, :, :])
+                # new_var.setncatts({k: z_var.getncattr(k) for k in z_var.ncattrs()})
+                ds.close()
+                mod_subset = call(model_subset, variable='z%s' % level)
+            else:
+                mod_subset = model_subset
+
+        except:
+            msg = 'failed to subset simulation or reference data'
+            LOGGER.exception(msg)
+            raise Exception(msg)
+
+# --------------------------------------------
+        try:
+            if direction == 'mo2re':
+                simulation = mod_subset
+                archive = nc_subset
+                base_id = model
+                sim_id = model_id
+            elif direction == 're2mo':
+                simulation = nc_subset
+                archive = mod_subset
+                base_id = model_id
+                sim_id = model
+            else:
+                LOGGER.exception('direction not valid: %s ' % direction)
+        except:
+            msg = 'failed to find comparison direction'
+            LOGGER.exception(msg)
+            raise Exception(msg)
+
+        try:
+            if level is not None:
+                out_var = 'z%s' % level
+            else:
+                var_archive = get_variable(archive)
+                var_simulation = get_variable(simulation)
+                if var_archive != var_simulation:
+                    rename_variable(archive, oldname=var_archive, newname=var_simulation)
+                    out_var = var_simulation
+                    LOGGER.info('varname %s in netCDF renamed to %s' % (var_archive, var_simulation))
+        except:
+            msg = 'failed to rename variable in target files'
+            LOGGER.exception(msg)
+            raise Exception(msg)
+
+        try:
+            if seacyc is True:
+                seasoncyc_base, seasoncyc_sim = analogs.seacyc(
+                                        archive, simulation,
+                                        method=normalize)
+            else:
+                seasoncyc_base = None
+                seasoncyc_sim = None
+        except:
+            msg = 'failed to prepare seasonal cycle reference files'
+            LOGGER.exception(msg)
+            raise Exception(msg)
+
+        # ip, output = mkstemp(dir='.', suffix='.txt')
+        # output_file = path.abspath(output)
+
+        output_file = 'output.txt'
+
+        ################################
+        # Prepare names for config.txt #
+        ################################
+
+        # refDatesString = dt.strftime(refSt, '%Y-%m-%d') + "_" + dt.strftime(refEn, '%Y-%m-%d')
+        # simDatesString = dt.strftime(dateSt, '%Y-%m-%d') + "_" + dt.strftime(dateEn, '%Y-%m-%d')
+
+        # Fix < 1900 issue...
+        refDatesString = refSt.isoformat().strip().split("T")[0] + "_" + refEn.isoformat().strip().split("T")[0]
+        simDatesString = dateSt.isoformat().strip().split("T")[0] + "_" + dateEn.isoformat().strip().split("T")[0]
+
+        archiveNameString = "base_" + out_var + "_" + refDatesString + '_%.1f_%.1f_%.1f_%.1f' \
+                            % (bbox[0], bbox[2], bbox[1], bbox[3]) + '.nc'
+        simNameString = "sim_" + out_var + "_" + simDatesString + '_%.1f_%.1f_%.1f_%.1f' \
+                        % (bbox[0], bbox[2], bbox[1], bbox[3]) + '.nc'
+
+        move(archive, archiveNameString)
+        move(simulation, simNameString)
+
+        archive = archiveNameString
+        simulation = simNameString
+
+        files = [path.abspath(archive), path.abspath(simulation), output_file]
+
+        ############################
+        # generating the config file
+        ############################
+
+        response.update_status('writing config file', 50)
+        start_time = time.time()  # measure write config ...
+
+        try:
+            config_file = analogs.get_configfile(
+                files=files,
+                seasoncyc_base=seasoncyc_base,
+                seasoncyc_sim=seasoncyc_sim,
+                base_id=base_id,
+                sim_id=sim_id,
+                timewin=timewin,
+                # varname=var,
+                varname=out_var,
+                seacyc=seacyc,
+                cycsmooth=91,
+                nanalog=nanalog,
+                seasonwin=seasonwin,
+                distfun=distance,
+                outformat=outformat,
+                calccor=True,
+                silent=False,
+                # period=[dt.strftime(refSt, '%Y-%m-%d'), dt.strftime(refEn, '%Y-%m-%d')],
+                period=[refSt.isoformat().strip().split("T")[0], refEn.isoformat().strip().split("T")[0]],
+                bbox="%s,%s,%s,%s" % (bbox[0], bbox[2], bbox[1], bbox[3]))
+        except:
+            msg = 'failed to generate config file'
+            LOGGER.exception(msg)
+            raise Exception(msg)
+
+        #######################
+        # CASTf90 call
+        #######################
+        import subprocess
+        import shlex
+
+        start_time = time.time()  # measure call castf90
+
+        response.update_status('Start CASTf90 call', 60)
+
+        # -----------------------
+        try:
+            import ctypes
+            # TODO: This lib is for linux
+            mkl_rt = ctypes.CDLL('libmkl_rt.so')
+            nth = mkl_rt.mkl_get_max_threads()
+            LOGGER.debug('Current number of threads: %s' % (nth))
+            mkl_rt.mkl_set_num_threads(ctypes.byref(ctypes.c_int(64)))
+            nth = mkl_rt.mkl_get_max_threads()
+            LOGGER.debug('NEW number of threads: %s' % (nth))
+            # TODO: Does it \/\/\/ work with default shell=False in subprocess... (?)
+            environ['MKL_NUM_THREADS'] = str(nth)
+            environ['OMP_NUM_THREADS'] = str(nth)
+        except Exception as e:
+            msg = 'Failed to set THREADS %s ' % e
+            LOGGER.debug(msg)
+        # -----------------------
+
+        # ##### TEMPORAL WORKAROUND! With instaled hdf5-1.8.18 in anaconda ###############
+        # ##### MUST be removed after castf90 recompiled with the latest hdf version
+        # ##### NOT safe
+        environ['HDF5_DISABLE_VERSION_CHECK'] = '1'
+        # hdflib = os.path.expanduser("~") + '/anaconda/lib'
+        # hdflib = os.getenv("HOME") + '/anaconda/lib'
+        import pwd
+        hdflib = pwd.getpwuid(getuid()).pw_dir + '/anaconda/lib'
+        environ['LD_LIBRARY_PATH'] = hdflib
+        # ################################################################################
+
+        try:
+            response.update_status('execution of CASTf90', 70)
+            cmd = 'analogue.out %s' % path.relpath(config_file)
+            # system(cmd)
+            args = shlex.split(cmd)
+            output, error = subprocess.Popen(
+                args,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+                ).communicate()
+            LOGGER.info('analogue.out info:\n %s ' % output)
+            LOGGER.exception('analogue.out errors:\n %s ' % error)
+            response.update_status('**** CASTf90 suceeded', 80)
+        except:
+            msg = 'CASTf90 failed'
+            LOGGER.exception(msg)
+            raise Exception(msg)
+
+        LOGGER.debug("castf90 took %s seconds.", time.time() - start_time)
+
+        # TODO: Add try - except for pdfs
+        if plot == 'Yes':
+            analogs_pdf = analogs.plot_analogs(configfile=config_file)
+        else:
+            analogs_pdf = 'dummy_plot.pdf'
+            with open(analogs_pdf, 'a'): utime(analogs_pdf, None)
+
+        response.update_status('preparting output', 90)
+
+        # Stopper to keep twitcher results, for debug
+        # dummy=dummy
+        response.outputs['analog_pdf'].file = analogs_pdf
+        response.outputs['config'].file = config_file
+        response.outputs['analogs'].file = output_file
+        response.outputs['output_netcdf'].file = simulation
+        response.outputs['target_netcdf'].file = archive
+
+        ########################
+        # generate analog viewer
+        ########################
+
+        formated_analogs_file = analogs.reformat_analogs(output_file)
+        response.outputs['formated_analogs'].file = formated_analogs_file
+        LOGGER.info('analogs reformated')
+        # response.update_status('reformatted analog file', 95)
+        viewer_html = analogs.render_viewer(
+            # configfile=response.outputs['config'].get_url(),
+            configfile=config_file,
+            # datafile=response.outputs['formated_analogs'].get_url())
+            datafile=formated_analogs_file)
+        response.outputs['output'].file = viewer_html
+        response.update_status('Successfully generated analogs viewer', 95)
+        LOGGER.info('rendered pages: %s ', viewer_html)
+        response.update_status('execution ended', 100)
+        LOGGER.debug("total execution took %s seconds.", time.time() - process_start_time)
+        response.outputs['output_log'].file = 'log.txt'
+        return response
