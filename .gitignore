@@ -84,3 +84,5 @@ testdata.json
 *.a
 *.mod
 *.out
+
+blackswan/data/obs/*.txt
