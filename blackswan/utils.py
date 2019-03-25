@@ -795,6 +795,12 @@ def get_values(resource, variable=None):
     if variable is None:
         variable = get_variable(resource)
 
+    # Python 2-3
+    try:
+      basestring
+    except NameError:
+      basestring = str
+
     if isinstance(resource, basestring):
         ds = Dataset(resource)
     elif len(resource) == 1:
