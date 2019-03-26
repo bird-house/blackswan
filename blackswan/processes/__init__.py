@@ -5,6 +5,7 @@ from .wps_analogs_compare import AnalogscompareProcess
 from .wps_pythonanattribution import PythonanattributionProcess
 from .wps_eventattrib import EventAttributionProcess
 from .wps_localdims_rea import LocaldimsReaProcess
+from .wps_localdims_mod import LocaldimsModProcess
 processes = [
     SayHello(),
     AnalogsreanalyseProcess(),
@@ -13,4 +14,5 @@ processes = [
     PythonanattributionProcess(),
     EventAttributionProcess(),
     LocaldimsReaProcess(),
+    LocaldimsModProcess(),
 ]
