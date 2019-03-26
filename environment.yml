@@ -5,8 +5,8 @@ channels:
 - defaults
 
 # the r hell ...
-# - r
-# - bioconda  # for r-mclust
+- r
+- bioconda  # for r-mclust
 
 # ocgis
 # - nesii/label/ocgis-next
@@ -39,5 +39,14 @@ dependencies:
 ###### analogue#####
 #- castf90=0.1.5
 ####################
+
+####### R ##########
+- cairo
+- r
+- r-ggplot2
+- r-plotly
+- pandoc # for html
+###################
+
 - pip:
   - -e git+https://github.com/NCPP/ocgis#egg=owslib

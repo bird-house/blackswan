@@ -142,26 +142,26 @@ class LocaldimsReaProcess(Process):
                           supported_formats=[Format('image/pdf')],
                           as_reference=True,
                           ),
-#Y            ComplexOutput("ld2_pdf", "Scatter plot dims/theta",
-#Y                          abstract="Scatter plot dims/theta",
-#Y                          supported_formats=[Format('image/pdf')],
-#Y                          as_reference=True,
-#Y                          ),
-#Y            ComplexOutput("ld2_seas_pdf", "Scatter plot dims/theta for season",
-#Y                          abstract="Scatter plot dims/theta for season",
-#Y                          supported_formats=[Format('image/pdf')],
-#Y                          as_reference=True,
-#Y                          ),
-#Y            ComplexOutput("ld2_html", "Scatter plot dims/theta as html page",
-#Y                          abstract="Interactive visualization of localdims",
-#Y                          supported_formats=[Format("text/html")],
-#Y                          as_reference=True,
-#Y                          ),
-#Y            ComplexOutput("ld2_seas_html", "Scatter plot dims/theta for season as html page",
-#Y                          abstract="Interactive visualization of localdims",
-#Y                          supported_formats=[Format("text/html")],
-#Y                          as_reference=True,
-#Y                          ),
+            ComplexOutput("ld2_pdf", "Scatter plot dims/theta",
+                          abstract="Scatter plot dims/theta",
+                          supported_formats=[Format('image/pdf')],
+                          as_reference=True,
+                          ),
+            ComplexOutput("ld2_seas_pdf", "Scatter plot dims/theta for season",
+                          abstract="Scatter plot dims/theta for season",
+                          supported_formats=[Format('image/pdf')],
+                          as_reference=True,
+                          ),
+            ComplexOutput("ld2_html", "Scatter plot dims/theta as html page",
+                          abstract="Interactive visualization of localdims",
+                          supported_formats=[Format("text/html")],
+                          as_reference=True,
+                          ),
+            ComplexOutput("ld2_seas_html", "Scatter plot dims/theta for season as html page",
+                          abstract="Interactive visualization of localdims",
+                          supported_formats=[Format("text/html")],
+                          as_reference=True,
+                          ),
             ComplexOutput('output_log', 'Logging information',
                           abstract="Collected logs during process run.",
                           as_reference=True,
@@ -542,37 +542,37 @@ class LocaldimsReaProcess(Process):
 
         # -------------------------- plot with R ---------------
         # '%s.txt' % model
-#Y        R_plot_file = 'plot_csv.R'
-#Y        ld2_pdf = '%s_local_dims.pdf' % model
-#Y        ld2_html = '%s_local_dims.html' % model
-#Y        ld2_seas_pdf = season + '_' + ld2_pdf
-#Y        ld2_seas_html = season + '_' + ld2_html
+        R_plot_file = 'plot_csv.R'
+        ld2_pdf = '%s_local_dims.pdf' % model
+        ld2_html = '%s_local_dims.html' % model
+        ld2_seas_pdf = season + '_' + ld2_pdf
+        ld2_seas_html = season + '_' + ld2_html
 
-#Y        args = ['Rscript', os.path.join(Rsrc, R_plot_file),
-#Y                '%s' % dim_filename,
-#Y                '%s' % ld2_pdf,
-#Y                '%s' % ld2_html]
-#Y        try:
-#Y            output, error = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-#Y            LOGGER.info('R outlog info:\n %s ' % output)
-#Y            LOGGER.exception('R outlog errors:\n %s ' % error)
-#Y        except:
-#Y            msg = 'Could not produce plot'
-#Y            LOGGER.exception(msg)
-#Y            # TODO: Here need produce empty pdf(s) to pass to output
+        args = ['Rscript', os.path.join(Rsrc, R_plot_file),
+                '%s' % dim_filename,
+                '%s' % ld2_pdf,
+                '%s' % ld2_html]
+        try:
+            output, error = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+            LOGGER.info('R outlog info:\n %s ' % output)
+            LOGGER.exception('R outlog errors:\n %s ' % error)
+        except:
+            msg = 'Could not produce plot'
+            LOGGER.exception(msg)
+            # TODO: Here need produce empty pdf(s) to pass to output
 
         # TODO check whether remove Rdat.pdf at this step
-#Y        args = ['Rscript', os.path.join(Rsrc, R_plot_file),
-#Y                '%s' % seas_dim_filename,
-#Y                '%s' % ld2_seas_pdf,
-#Y                '%s' % ld2_seas_html]
-#Y        try:
-#Y            output, error = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-#Y            LOGGER.info('R outlog info:\n %s ' % output)
-#Y            LOGGER.exception('R outlog errors:\n %s ' % error)
-#Y        except:
-#Y            msg = 'Could not produce plot'
-#Y            LOGGER.exception(msg)
+        args = ['Rscript', os.path.join(Rsrc, R_plot_file),
+                '%s' % seas_dim_filename,
+                '%s' % ld2_seas_pdf,
+                '%s' % ld2_seas_html]
+        try:
+            output, error = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+            LOGGER.info('R outlog info:\n %s ' % output)
+            LOGGER.exception('R outlog errors:\n %s ' % error)
+        except:
+            msg = 'Could not produce plot'
+            LOGGER.exception(msg)
             # TODO: Here need produce empty pdf(s) to pass to output
         # 
         # ====================================================
@@ -626,10 +626,10 @@ class LocaldimsReaProcess(Process):
         response.outputs['ldist_seas'].file = seas_dim_filename
         response.outputs['ld_pdf'].file = ld_pdf
 
-#Y        response.outputs['ld2_pdf'].file = ld2_pdf
-#Y        response.outputs['ld2_seas_pdf'].file = ld2_seas_pdf
-#Y        response.outputs['ld2_html'].file = ld2_html
-#Y        response.outputs['ld2_seas_html'].file = ld2_seas_html
+        response.outputs['ld2_pdf'].file = ld2_pdf
+        response.outputs['ld2_seas_pdf'].file = ld2_seas_pdf
+        response.outputs['ld2_html'].file = ld2_html
+        response.outputs['ld2_seas_html'].file = ld2_seas_html
 
         response.update_status('execution ended', 100)
         LOGGER.debug("total execution took %s seconds.",
