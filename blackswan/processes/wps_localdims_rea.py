@@ -541,7 +541,6 @@ class LocaldimsReaProcess(Process):
         savetxt(seas_dim_filename, sf, fmt='%s', delimiter=',')
 
         # -------------------------- plot with R ---------------
-        # '%s.txt' % model
         R_plot_file = 'plot_csv.R'
         ld2_pdf = '%s_local_dims.pdf' % model
         ld2_html = '%s_local_dims.html' % model

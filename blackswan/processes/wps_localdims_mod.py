@@ -11,6 +11,7 @@ import uuid
 from netCDF4 import Dataset
 
 from numpy import savetxt, loadtxt, column_stack
+from scipy.stats.mstats import mquantiles
 
 from blackswan import analogs
 from blackswan import config
@@ -110,7 +111,7 @@ class LocaldimsModProcess(Process):
 
             LiteralInput("method", "Method",
                          abstract="Method of calculation: Python(full dist matrix at once), R(full dist matrix at once), R_wrap(dist matrix row by row on multiCPUs)",
-                         default='Python',
+                         default='Python_wrap',
                          data_type='string',
                          min_occurs=0,
                          max_occurs=1,
@@ -130,21 +131,41 @@ class LocaldimsModProcess(Process):
                           supported_formats=[Format("text/plain")],
                           as_reference=True,
                           ),
+            ComplexOutput("ldist_csv", "Distances File with WR for visualization",
+                          abstract="multi-column csv file with rounded (dim 3) values ",
+                          supported_formats=[Format("text/plain")],
+                          as_reference=True,
+                          ),
+            ComplexOutput("q_csv", "Quantiles",
+                          abstract="multi-column csv file",
+                          supported_formats=[Format("text/plain")],
+                          as_reference=True,
+                          ),
             ComplexOutput("ld_pdf", "Scatter plot dims/theta",
                           abstract="Scatter plot dims/theta",
                           supported_formats=[Format('image/pdf')],
                           as_reference=True,
                           ),
-#Y            ComplexOutput("ld2_pdf", "Scatter plot dims/theta",
-#Y                          abstract="Scatter plot dims/theta",
-#Y                          supported_formats=[Format('image/pdf')],
-#Y                          as_reference=True,
-#Y                          ),
-#Y            ComplexOutput("ld2_seas_pdf", "Scatter plot dims/theta for season",
-#Y                          abstract="Scatter plot dims/theta for season",
-#Y                          supported_formats=[Format('image/pdf')],
-#Y                          as_reference=True,
-#Y                          ),
+            ComplexOutput("ld2_pdf", "Scatter plot dims/theta",
+                          abstract="Scatter plot dims/theta",
+                          supported_formats=[Format('image/pdf')],
+                          as_reference=True,
+                          ),
+            ComplexOutput("ld2_seas_pdf", "Scatter plot dims/theta for season",
+                          abstract="Scatter plot dims/theta for season",
+                          supported_formats=[Format('image/pdf')],
+                          as_reference=True,
+                          ),
+            ComplexOutput("ld2_html", "Scatter plot dims/theta as html page",
+                          abstract="Interactive visualization of localdims",
+                          supported_formats=[Format("text/html")],
+                          as_reference=True,
+                          ),
+            ComplexOutput("ld2_seas_html", "Scatter plot dims/theta for season as html page",
+                          abstract="Interactive visualization of localdims",
+                          supported_formats=[Format("text/html")],
+                          as_reference=True,
+                          ),
             ComplexOutput('output_log', 'Logging information',
                           abstract="Collected logs during process run.",
                           as_reference=True,
@@ -523,43 +544,94 @@ class LocaldimsModProcess(Process):
         savetxt(seas_dim_filename, sf, fmt='%s', delimiter=',')
 
         # -------------------------- plot with R ---------------
-#Y        R_plot_file = 'plot_csv.R'
-#Y        ld2_pdf = 'local_dims.pdf'
-#Y        ld2_seas_pdf = season + '_local_dims.pdf'
+        R_plot_file = 'plot_csv.R'
+        ld2_pdf = '%s_local_dims.pdf' % model_id
+        ld2_html = '%s_local_dims.html' % model_id
+        ld2_seas_pdf = season + '_' + ld2_pdf
+        ld2_seas_html = season + '_' + ld2_html
 
-#Y        args = ['Rscript', path.join(Rsrc, R_plot_file),
-#Y                '%s' % dim_filename,
-#Y                '%s' % ld2_pdf]
-#Y        try:
-#Y            output, error = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-#Y            LOGGER.info('R outlog info:\n %s ' % output)
-#Y            LOGGER.exception('R outlog errors:\n %s ' % error)
-#Y        except:
-#Y            msg = 'Could not produce plot'
-#Y            LOGGER.exception(msg)
-#Y            # TODO: Here need produce empty pdf to pass to output
+        args = ['Rscript', path.join(Rsrc, R_plot_file),
+                '%s' % dim_filename,
+                '%s' % ld2_pdf,
+                '%s' % ld2_html]
+        try:
+            output, error = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+            LOGGER.info('R outlog info:\n %s ' % output)
+            LOGGER.exception('R outlog errors:\n %s ' % error)
+        except:
+            msg = 'Could not produce plot'
+            LOGGER.exception(msg)
+            # TODO: Here need produce empty pdf to pass to output
 
-#Y        args = ['Rscript', path.join(Rsrc, R_plot_file),
-#Y                '%s' % seas_dim_filename,
-#Y                '%s' % ld2_seas_pdf]
-#Y        try:
-#Y            output, error = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-#Y            LOGGER.info('R outlog info:\n %s ' % output)
-#Y            LOGGER.exception('R outlog errors:\n %s ' % error)
-#Y        except:
-#Y            msg = 'Could not produce plot'
-#Y            LOGGER.exception(msg)
-#Y            # TODO: Here need produce empty pdf(s) to pass to output
+        args = ['Rscript', path.join(Rsrc, R_plot_file),
+                '%s' % seas_dim_filename,
+                '%s' % ld2_seas_pdf,
+                '%s' % ld2_seas_html]
+        try:
+            output, error = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+            LOGGER.info('R outlog info:\n %s ' % output)
+            LOGGER.exception('R outlog errors:\n %s ' % error)
+        except:
+            msg = 'Could not produce plot'
+            LOGGER.exception(msg)
+            # TODO: Here need produce empty pdf(s) to pass to output
         # 
 
         # ====================================================
+
+
+        # ========= Prepare csv for d3.js visualizastion =====
+        dim_csv_filename = '%s.csv' % model_id
+        q_csv_filename = '%s_q.csv' % model_id
+
+        # TODO: Add quantiles as input parameters
+        q1d = mquantiles(l_dist, 0.15, alphap=0.5, betap=0.5)
+        q2d = mquantiles(l_dist, 0.85, alphap=0.5, betap=0.5)
+        q1t = mquantiles(l_theta, 0.15, alphap=0.5, betap=0.5)
+        q2t = mquantiles(l_theta, 0.85, alphap=0.5, betap=0.5)
+        NAOp = [0]*len(res_times)
+        NAOn = [0]*len(res_times)
+        BLO = [0]*len(res_times)
+        AR = [0]*len(res_times)
+        MIX = [0]*len(res_times)
+
+        for i in range(len(res_times)):
+            if (l_dist[i] < q1d and l_theta[i] > q1t and l_theta[i] < q2t):
+                NAOp[i]=1
+            elif (l_dist[i] > q2d and l_theta[i] > q1t and l_theta[i] < q2t):
+                BLO[i]=1
+            elif (l_theta[i] > q2t and l_dist[i] > q1d and l_dist[i] < q2d):
+                AR[i]=1
+            elif (l_theta[i] < q1t and l_dist[i] > q1d and l_dist[i] < q2d):
+                NAOn[i] = 1
+            else:
+                MIX[i] = 1
+
+        l_theta_tr = [round(x,3) for x in l_theta]
+        l_dist_tr = [round(x,3) for x in l_dist]
+
+        # concat_csv_vals = column_stack([res_times, l_theta, l_dist, NAOp, NAOn, BLO, AR, MIX])
+        concat_csv_vals = column_stack([res_times, l_theta_tr, l_dist_tr, NAOp, NAOn, BLO, AR, MIX])
+        csv_head = 'Time,theta,dim,NAOp,NAOn,BLO,AR,MIX'
+        savetxt(dim_csv_filename, concat_csv_vals, fmt='%s', delimiter=',', header = csv_head)
+
+        q_csv_vals = column_stack([q1d,q2d,q1t,q2t])
+        q_csv_head = 'q1d,q2d,q1t,q2t'
+        savetxt(q_csv_filename, q_csv_vals, fmt='%s', delimiter=',', header = q_csv_head)
+
+        # ====================================================
+
         response.update_status('preparing output', 80)
 
+        response.outputs['ldist_csv'].file = dim_csv_filename
+        response.outputs['q_csv'].file = q_csv_filename
         response.outputs['ldist'].file = dim_filename
         response.outputs['ldist_seas'].file = seas_dim_filename
         response.outputs['ld_pdf'].file = ld_pdf
-#Y        response.outputs['ld2_pdf'].file = ld2_pdf
-#Y        response.outputs['ld2_seas_pdf'].file = ld2_seas_pdf
+        response.outputs['ld2_pdf'].file = ld2_pdf
+        response.outputs['ld2_seas_pdf'].file = ld2_seas_pdf
+        response.outputs['ld2_html'].file = ld2_html
+        response.outputs['ld2_seas_html'].file = ld2_seas_html
 
         response.update_status('execution ended', 100)
         LOGGER.debug("total execution took %s seconds.",
