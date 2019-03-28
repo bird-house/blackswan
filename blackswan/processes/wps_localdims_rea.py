@@ -127,7 +127,7 @@ class LocaldimsReaProcess(Process):
                           supported_formats=[Format("text/plain")],
                           as_reference=True,
                           ),
-            ComplexOutput("ldist_csv", "Distances File with WR for visualization",
+            ComplexOutput("ldist_csv", "Distances File with locdims for visualization",
                           abstract="multi-column csv file with rounded (dim 3) values ",
                           supported_formats=[Format("text/plain")],
                           as_reference=True,
@@ -160,6 +160,16 @@ class LocaldimsReaProcess(Process):
             ComplexOutput("ld2_seas_html", "Scatter plot dims/theta for season as html page",
                           abstract="Interactive visualization of localdims",
                           supported_formats=[Format("text/html")],
+                          as_reference=True,
+                          ),
+            ComplexOutput("zoom_html", "Scatter plot dims/theta for season as html page",
+                          abstract="Interactive visualization of localdims",
+                          supported_formats=[Format("text/html")],
+                          as_reference=True,
+                          ),
+            ComplexOutput("zoom_csv", "Distances File with locdims for visualization",
+                          abstract="multi-column csv file",
+                          supported_formats=[Format("text/plain")],
                           as_reference=True,
                           ),
             ComplexOutput('output_log', 'Logging information',
@@ -580,6 +590,8 @@ class LocaldimsReaProcess(Process):
         # ========= Prepare csv for d3.js visualizastion =====
         dim_csv_filename = '%s.csv' % model
         q_csv_filename = '%s_q.csv' % model
+        loc_zoom_filename = 'loc_dim_zoom.csv'
+        loc_zoom_html = os.path.join(config.data_path(), 'loc_dim_zoom.html')
 
         # TODO: Add quantiles as input parameters
         q1d = mquantiles(l_dist, 0.15, alphap=0.5, betap=0.5)
@@ -616,6 +628,11 @@ class LocaldimsReaProcess(Process):
         q_csv_head = 'q1d,q2d,q1t,q2t'
         savetxt(q_csv_filename, q_csv_vals, fmt='%s', delimiter=',', header = q_csv_head)
 
+        
+        zoom_vals = column_stack([res_times, l_theta_tr, l_dist_tr])
+        zoom_head = 'Time,theta,dim'
+        savetxt(loc_zoom_filename, zoom_vals, fmt='%s', delimiter=',', header = zoom_head, comments='')
+
         # ====================================================
 
         response.update_status('preparing output', 80)
@@ -629,6 +646,9 @@ class LocaldimsReaProcess(Process):
         response.outputs['ld2_seas_pdf'].file = ld2_seas_pdf
         response.outputs['ld2_html'].file = ld2_html
         response.outputs['ld2_seas_html'].file = ld2_seas_html
+
+        response.outputs['zoom_csv'].file = loc_zoom_filename
+        response.outputs['zoom_html'].file = loc_zoom_html
 
         response.update_status('execution ended', 100)
         LOGGER.debug("total execution took %s seconds.",
