@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+body {
+  font: 14px sans-serif;
+}
+.overlay {
+  fill: none;
+  pointer-events: all;
+}
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000; 
+  shape-rendering: crispEdges;
+}
+.plot {
+  fill: rgba(250, 250, 255, 0.6);  
+}
+.dot {
+  stroke: #000;
+}
+</style>
+<body>
+
+<script src="http://d3js.org/d3.v3.min.js"></script>
+
+<script>
+var margin = {top: 20, right: 200, bottom: 30, left: 40},
+    width = 1024 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+var parse = d3.time.format("%Y%m%d").parse;
+var formatFL = d3.format('.1f')
+var formatTime = d3.time.format("%d %B, %Y");
+
+d3.csv('loc_dim_zoom.csv', function(error, data) {
+    data.forEach(function(d) {
+      d.Time = parse(d.Time);
+      d.theta = parseFloat(d.theta);
+      d.dim = parseFloat(d.dim);
+    });
+
+var minXdim;  //=0.0;
+var maxXdim; //=30.0;
+var minXth; //=0.2;
+var maxXth;//=0.8;
+
+minXdim=d3.min(data,function (d) { return d.dim })
+maxXdim=d3.max(data,function (d) { return d.dim })
+minXth=d3.min(data,function (d) { return d.theta })
+maxXth=d3.max(data,function (d) { return d.theta })
+
+var x = d3.scale.linear()
+    .domain([minXdim-1,maxXdim+1]).nice()
+    .range([0, width]);
+var y = d3.scale.linear()
+    .domain([minXth-0.05,maxXth+0.05]).nice()
+    .range([height, 0]);
+
+var color = d3.scale.linear()
+    //.domain([minXdim,maxXdim])
+    .domain(d3.extent(data, function(d) { return d.dim})).nice()
+    .range(['yellow','red']);
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .tickFormat(formatFL)
+    .ticks(5)
+    .tickSize(-height)
+    .orient("bottom");
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .tickFormat(formatFL)  
+    .ticks(5)
+    .tickSize(-width)
+    .orient("left");
+var zoom = d3.behavior.zoom()
+    .x(x)
+    .y(y)
+    .scaleExtent([0.5,5]) //0,10
+    .on("zoom", zoom);
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+    .call(zoom);  
+
+svg.append("rect")
+  .attr("width", width)
+  .attr("height", height)
+  .attr("class", "plot");
+
+// color.domain(d3.extent(data, function(d) { return d.dim}));
+
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis)
+    .append("text")
+      .attr("class", "label")
+      .attr("x", width/2)
+      .attr("y", margin.bottom -5)
+      .style("text-anchor", "middle")
+      .text("Local dimension");
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+    .append("text")
+      .attr("class", "label")
+      .attr("transform", "rotate(-90)")
+      .attr("y", -margin.left)
+      .attr("x", -height/2)
+      .attr("dy", "1em")
+      .style("text-anchor", "middle")
+      .text("Theta");
+  var clip = svg.append("clipPath")
+      .attr("id", "clip")
+    .append("rect")
+      .attr("x", 0)
+      .attr("y", 0)
+      .attr("width", width)
+      .attr("height", height);
+  var chartBody = svg.append("g")
+      .attr("clip-path", "url(#clip)");
+     
+  var circle = chartBody.selectAll(".dot")
+      .data(data);
+  circle.enter().append("circle")
+      .attr("class", "dot")    
+      .attr("r", 2.5)
+      .attr("stroke-width", 0.1)    
+      .attr("transform", transform)      
+      .style("fill", function(d) {return color(d.dim); })
+      .style('cursor', 'pointer')
+      .on('mouseover', displayData)
+      .on('mouseout', removeDisplayedData)
+    .append("title")
+      .text(function(d) { return formatTime(d.Time);});
+  // circle.filter(function(d) { return d.xlog == null;}).remove();
+ var legend = svg.selectAll(".legend")
+      .data(color.domain())
+    .enter().append("g")
+      .attr("class", "legend")
+      .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+  legend.append("circle")
+      .attr("class", "dot")    
+      .attr("cx", width + 18)
+      .attr("cy", 15)
+      .attr("stroke-width", 0.1)  
+      .attr("r", 5)     
+      .style("fill", color);
+  legend.append("text")
+      .attr("x", width + 32)
+      .attr("y", 15)
+      .attr("dy", ".35em")
+      .style("text-anchor", "start")
+      .text(function(d) { return d; });
+  legend.append("text")
+      .attr("x", width + 18)
+      .attr("dy", 100)
+      .attr("id", "blowup")     
+      .style("font-size", "15px")
+      .style("font-weight", "bold");
+
+
+//test
+circle
+ .on('click', function(){
+  d3.select(this)
+  .transition()
+  .duration(50)
+  .attr("r",20);
+  d3.select('svg #blowup')
+    .text('Cool!!')
+  })
+
+
+  function zoom() {   
+    svg.select(".x.axis").call(xAxis);
+    svg.select(".y.axis").call(yAxis);
+    svg.selectAll(".dot").attr("transform", transform);
+  }
+function transform(d) {
+  return "translate(" + x(d.dim) +"," + y(d.theta)+")";
+}
+function displayData(d, i) {
+  d3.select(this)  
+    .attr("r",7)
+    .attr('stroke','black')
+    .attr("stroke-width", 1);
+  d3.select('svg #blowup')
+    .text(formatTime(d.Time))
+    .style("fill", function(d) {return color(d.dim); })  
+    .transition()       
+    .style('opacity', 1);
+}
+function removeDisplayedData(d, i) {
+ d3.select(this)
+    .transition()
+    .duration(500)
+    .attr("r",2.5)
+    .attr("stroke-width", 0.1);
+  d3.select('svg #blowup')      
+      .transition()
+      .duration(1500)
+      .style('opacity', 0);
+}
+});
+</script>
