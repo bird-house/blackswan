@@ -22,6 +22,7 @@ from blackswan.datafetch import _PRESSUREDATA_
 from blackswan.datafetch import reanalyses as rl
 from blackswan.ocgis_module import call
 from blackswan import analogs
+from blackswan import visualisation
 from blackswan import config
 from blackswan.utils import rename_complexinputs
 from blackswan.utils import get_variable, get_time
@@ -139,6 +140,11 @@ class LocaldimsReaProcess(Process):
                           ),
             ComplexOutput("ld_pdf", "Scatter plot dims/theta",
                           abstract="Scatter plot dims/theta",
+                          supported_formats=[Format('image/pdf')],
+                          as_reference=True,
+                          ),
+            ComplexOutput("ld_pie", "Distribution of weather regimes",
+                          abstract="Pie-plot of weather regimes",
                           supported_formats=[Format('image/pdf')],
                           as_reference=True,
                           ),
@@ -627,15 +633,18 @@ class LocaldimsReaProcess(Process):
         q_csv_vals = column_stack([q1d,q2d,q1t,q2t])
         q_csv_head = 'q1d,q2d,q1t,q2t'
         savetxt(q_csv_filename, q_csv_vals, fmt='%s', delimiter=',', header = q_csv_head)
-
-        
+       
         zoom_vals = column_stack([res_times, l_theta_tr, l_dist_tr])
         zoom_head = 'Time,theta,dim'
         savetxt(loc_zoom_filename, zoom_vals, fmt='%s', delimiter=',', header = zoom_head, comments='')
 
+        # Create pie-plot
+        pie_pdf = visualisation.pdf_pie_ld(NAOp, NAOn, BLO, AR, MIX, output='wr_dist.pdf')
+
         # ====================================================
 
         response.update_status('preparing output', 80)
+        response.outputs['ld_pie'].file = pie_pdf
         response.outputs['ldist_csv'].file = dim_csv_filename
         response.outputs['q_csv'].file = q_csv_filename
         response.outputs['ldist'].file = dim_filename

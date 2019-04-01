@@ -14,6 +14,7 @@ from numpy import savetxt, loadtxt, column_stack
 from scipy.stats.mstats import mquantiles
 
 from blackswan import analogs
+from blackswan import visualisation
 from blackswan import config
 
 from blackswan.ocgis_module import call
@@ -143,6 +144,11 @@ class LocaldimsModProcess(Process):
                           ),
             ComplexOutput("ld_pdf", "Scatter plot dims/theta",
                           abstract="Scatter plot dims/theta",
+                          supported_formats=[Format('image/pdf')],
+                          as_reference=True,
+                          ),
+            ComplexOutput("ld_pie", "Distribution of weather regimes",
+                          abstract="Pie-plot of weather regimes",
                           supported_formats=[Format('image/pdf')],
                           as_reference=True,
                           ),
@@ -619,10 +625,14 @@ class LocaldimsModProcess(Process):
         q_csv_head = 'q1d,q2d,q1t,q2t'
         savetxt(q_csv_filename, q_csv_vals, fmt='%s', delimiter=',', header = q_csv_head)
 
+        # Create pie-plot
+        pie_pdf = visualisation.pdf_pie_ld(NAOp, NAOn, BLO, AR, MIX, output='wr_dist_model.pdf')
+
         # ====================================================
 
         response.update_status('preparing output', 80)
 
+        response.outputs['ld_pie'].file = pie_pdf
         response.outputs['ldist_csv'].file = dim_csv_filename
         response.outputs['q_csv'].file = q_csv_filename
         response.outputs['ldist'].file = dim_filename

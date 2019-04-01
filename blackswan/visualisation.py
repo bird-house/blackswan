@@ -4,6 +4,7 @@ from os.path import join
 from tempfile import mkstemp
 from netCDF4 import Dataset
 from datetime import datetime, date
+from math import trunc
 import numpy as np
 import logging
 from matplotlib import use
@@ -580,6 +581,39 @@ def pdfmerge(pdfs, outpdf=None):
         _, mergedpdf = mkstemp(dir='.', suffix='.pdf')
 
     return mergedpdf
+
+
+def pdf_pie_ld(NAOp, NAOn, BLO, AR, MIX, output='wr_dist.pdf'):
+    pdffilename = output
+    fig = plt.figure()
+    fig.set_size_inches(18.5, 10.5, forward=True)
+    naop_s = sum(NAOp)
+    naon_s = sum(NAOn)
+    blo_s = sum(BLO)
+    ar_s = sum(AR)
+    mix_s = sum(MIX)
+
+    labels = 'NAO+', 'NAO-', 'BLO', 'AR', 'MIX'
+    sizes = [naop_s, naon_s, blo_s, ar_s, mix_s]
+
+    wr_max=max(sizes)
+    try:
+        explode = (0.1*trunc(sizes[0]/wr_max), 0.1*trunc(sizes[1]/wr_max), 0.1*trunc(sizes[2]/wr_max), 0.1*trunc(sizes[3]/wr_max), 0.1*trunc(sizes[4]/wr_max))
+    except: 
+        explode = (0, 0, 0, 0, 0)
+    colors = ['blue', 'lightgrey', 'green', 'red', 'gold']
+    # explode = (0, 0, 0, 0, 0)
+    # explode = (0.1, 0, 0, 0, 0)  # explode 1st slice
+ 
+    plt.pie(sizes, explode=explode, labels=labels, colors=colors,
+    autopct='%1.1f%%', shadow=True, startangle=140)
+    plt.axis('equal')
+
+    plt.savefig(pdffilename)
+    fig.clf()
+    plt.close(fig)
+    return pdffilename
+
 
 # == eggshell ==
 # def map_gbifoccurrences(latlon, dir='.', file_extension='png'):
