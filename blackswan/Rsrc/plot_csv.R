@@ -56,11 +56,12 @@ myPlot<-ggplot(data=df,aes(x,y)) +
 
 ggsave(filename=foutname, plot=myPlot, dpi=300, width = 35, height = 20, units = "cm")
 
-myPlot2<-ggplot(data=df,aes(x,y)) + 
+myPlot2<-ggplot(data=df,aes(x,y)) +
+  geom_point() + 
   stat_density2d(aes(fill=..level..,alpha=..level..),geom='polygon',colour='black') + 
   scale_fill_continuous(low="green",high="red") +
   guides(alpha="none") +
-  geom_point() + commonTheme
+  commonTheme
 
 library(plotly)
 p <- ggplotly(myPlot2)
