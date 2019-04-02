@@ -31,6 +31,11 @@ df=data.frame(csvdat[3],csvdat[2]); colnames(df) = c("x","y")
 
 #df=data.frame(dim,theta); colnames(df) = c("x","y")
 
+q1d=quantile(csvdat[3],0.15,type=5, na.rm=TRUE)
+q2d=quantile(csvdat[3],0.85,type=5, na.rm=TRUE)
+q1t=quantile(csvdat[2],0.15,type=5, na.rm=TRUE)
+q2t=quantile(csvdat[2],0.85,type=5, na.rm=TRUE)
+
 commonTheme = list(labs(color="Density",fill="Density",
                         x="Local dimension",
                         y="Persistence"),
@@ -45,10 +50,12 @@ commonTheme = list(labs(color="Density",fill="Density",
 #  guides(alpha="none") +
 #  geom_point() + commonTheme
 
-myPlot<-ggplot(data=df,aes(x,y)) + 
+myPlot<-ggplot(data=df,aes(x,y)) +
   geom_point() +
   stat_density2d(aes(fill=..level..,alpha=..level..),geom='polygon',colour='black') + 
   scale_fill_continuous(low="green",high="red") +
+  geom_vline(xintercept=c(q1d,q2d), linetype="dotted") +
+  geom_hline(yintercept=c(q1t,q2t), linetype="dotted") +
   guides(alpha="none") +
   commonTheme +
   xlim(0, 26) + 
@@ -57,9 +64,11 @@ myPlot<-ggplot(data=df,aes(x,y)) +
 ggsave(filename=foutname, plot=myPlot, dpi=300, width = 35, height = 20, units = "cm")
 
 myPlot2<-ggplot(data=df,aes(x,y)) +
-  geom_point() + 
-  stat_density2d(aes(fill=..level..,alpha=..level..),geom='polygon',colour='black') + 
+  geom_point() +
+  stat_density2d(aes(fill=..level..,alpha=..level..),geom='polygon',colour='black') +
   scale_fill_continuous(low="green",high="red") +
+  geom_vline(xintercept=c(q1d,q2d), linetype="dotted") +
+  geom_hline(yintercept=c(q1t,q2t), linetype="dotted") +
   guides(alpha="none") +
   commonTheme
 
