@@ -182,8 +182,8 @@ class LocaldimsModProcess(Process):
         super(LocaldimsModProcess, self).__init__(
             self._handler,
             identifier="localdims_mod",
-            title="Calculation of local dimentions and persistence (based on climate model data)",
-            abstract='Calculation of local dimentions and persistence (based on climate model data)',
+            title="Calculation of local dimensions and persistence (based on climate model data)",
+            abstract='Calculation of local dimensions and persistence (based on climate model data)',
             version="0.10",
             metadata=[
                 Metadata('LSCE', 'http://www.lsce.ipsl.fr/en/index.php'),

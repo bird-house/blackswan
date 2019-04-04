@@ -188,8 +188,8 @@ class LocaldimsReaProcess(Process):
         super(LocaldimsReaProcess, self).__init__(
             self._handler,
             identifier="localdims_rea",
-            title="Calculation of local dimentions and persistence (based on reanalyses data)",
-            abstract='Local dimentions and persistence',
+            title="Calculation of local dimensions and persistence (based on reanalyses data)",
+            abstract='Local dimensions and persistence',
             version="0.10",
             metadata=[
                 Metadata('LSCE', 'http://www.lsce.ipsl.fr/en/index.php'),
